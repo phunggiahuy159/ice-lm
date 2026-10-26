@@ -19,11 +19,16 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
+from matplotlib.patches import Patch  # noqa: E402
 import numpy as np  # noqa: E402
 
 # reference categorical palette (light mode), assigned per arm in a fixed order -- never by rank
+# (8 validated slots for more than 8 arms: the no-attention family G* reuses hues of 7:1-family arms it is never
+#  plotted with; G_C shares C's hue on purpose, it is the same ICE on another backbone)
 ARM_COLORS = {"A": "#2a78d6", "B": "#eb6834", "C": "#1baf7a", "C_notrust": "#eda100", "B_pm": "#e87ba4",
-              "F": "#008300", "C_off": "#6250d6"}
+              "F": "#008300", "G": "#6250d6", "G_C": "#1baf7a", "G_V": "#2a78d6", "G_VR": "#e87ba4"}
+# cache bytes/token of the ICE table when no benchmark.json is given (compact layout, measured on held-out code)
+ICE_BYTES_EST = {"C": 41, "C_notrust": 41, "F": 41, "G_C": 41, "G_V": 45, "G_VR": 69}
 OTHER = "#e34948"
 SURFACE, INK, INK2, GRID = "#fcfcfb", "#0b0b0b", "#52514e", "#e4e3df"
 CATEGORY_ORDER = ["copy_same", "override_same", "conflict_g1", "copy_diff", "conflict_g2", "conflict_g5",
@@ -40,8 +45,20 @@ res = json.load(open(a.results))
 groups = defaultdict(list)                        # arm label -> list of result dicts (seeds)
 for r in res.values():
     groups[r["arm"]].append(r)
-arms = sorted(groups, key=lambda s: (list(ARM_COLORS).index(s) if s in ARM_COLORS else 99, s))
-color = {arm: ARM_COLORS.get(arm, OTHER) for arm in arms}
+def base(arm):
+    return arm[:-4] if arm.endswith("_off") else arm      # "<arm>_off" = the same model with ICE switched off
+
+
+# an ICE-off control sits right after its model and wears its colour, hatched and lighter
+arms = sorted(groups, key=lambda s: (list(ARM_COLORS).index(base(s)) if base(s) in ARM_COLORS else 99,
+                                     s.endswith("_off"), s))
+color = {arm: ARM_COLORS.get(base(arm), OTHER) for arm in arms}
+
+
+def bar(ax, x, y, width, arm):
+    off = arm.endswith("_off")
+    ax.bar(x, y, width, color=color[arm], alpha=0.45 if off else 1.0, hatch="///" if off else None,
+           edgecolor=color[arm] if off else SURFACE, linewidth=1)
 bench = json.load(open(a.benchmark))["summary"] if a.benchmark else {}
 
 
@@ -83,7 +100,7 @@ for arm in arms:
     kv = vals(arm, "kv_bytes_per_token")
     if not loss or not kv:
         continue
-    x = kv[0] + bench.get(arm, {}).get("ice_bytes_per_token", 0.0)
+    x = kv[0] + (bench[arm].get("ice_bytes_per_token", 0.0) if arm in bench else ICE_BYTES_EST.get(arm, 0.0))
     y = float(np.mean(loss))
     yerr = [[y - min(loss)], [max(loss) - y]] if len(loss) > 1 else None
     ax.errorbar([x], [y], yerr=yerr, fmt="o", ms=8, color=color[arm], mec=SURFACE, mew=2, ecolor=color[arm],
@@ -91,7 +108,7 @@ for arm in arms:
     ax.annotate(f"{arm}  ({len(loss)} seed{'s' if len(loss) > 1 else ''})", (x, y), xytext=(8, 4),
                 textcoords="offset points", color=INK, fontsize=8)
 style(ax, "Code loss vs cache memory per token", "held-out code loss (lower is better)",
-      "cache bytes per token: KV" + (" + ICE tables" if bench else "") + "  (less is cheaper)")
+      "cache bytes per token: KV + ICE table" + ("" if bench else " (table: estimate)") + "  (less is cheaper)")
 fig.tight_layout()
 fig.savefig(os.path.join(a.out, "frontier.png"), dpi=200)
 plt.close(fig)
@@ -100,7 +117,7 @@ plt.close(fig)
 cats = [c for c in CATEGORY_ORDER if any(k.startswith(f"coderecall/{c}@") for r in res.values() for k in r)]
 if cats:
     plot_arms = [arm for arm in arms if any(k.endswith("/items_dec") for r in groups[arm] for k in r)]
-    fig, ax = plt.subplots(figsize=(max(7.0, 1.0 * len(cats) * max(1, len(plot_arms)) * 0.32 + 2), 4.2),
+    fig, ax = plt.subplots(figsize=(min(14.0, max(7.0, len(cats) * max(1, len(plot_arms)) * 0.32 + 2)), 4.6),
                            facecolor=SURFACE)
     width = 0.8 / max(1, len(plot_arms))
     for i, arm in enumerate(plot_arms):
@@ -115,7 +132,7 @@ if cats:
             lo.append(p - l_)
             hi.append(h_ - p)
         xs = np.arange(len(cats)) + (i - (len(plot_arms) - 1) / 2) * width
-        ax.bar(xs, means, width * 0.92, color=color[arm], label=arm, edgecolor=SURFACE, linewidth=1)
+        bar(ax, xs, means, width * 0.92, arm)
         ax.errorbar(xs, means, yerr=[lo, hi], fmt="none", ecolor=INK2, elinewidth=1, capsize=0)
     ax.set_xticks(np.arange(len(cats)))
     ax.set_xticklabels([c.replace("_", "\n", 1) for c in cats], fontsize=8)
@@ -126,8 +143,11 @@ if cats:
     ax.text((n_right - 1) / 2, 1.08, "lookup right", ha="center", color=INK2, fontsize=8)
     ax.text((n_right + len(cats) - 1) / 2, 1.08, "lookup useless or wrong", ha="center", color=INK2, fontsize=8)
     style(ax, "CodeRecall: accuracy on the deciding digit (95% CI)", "accuracy")
-    ax.legend(frameon=False, fontsize=8, ncol=min(6, len(plot_arms)), loc="upper right",
-              bbox_to_anchor=(1.0, -0.12))
+    off = [arm.endswith("_off") for arm in plot_arms]
+    handles = [Patch(facecolor=color[arm], alpha=0.45 if o else 1.0, hatch="///" if o else None,
+                     edgecolor=color[arm] if o else SURFACE, label=arm) for arm, o in zip(plot_arms, off)]
+    ax.legend(handles=handles, frameon=False, fontsize=8, ncol=min(8, len(plot_arms)), loc="upper right",
+              bbox_to_anchor=(1.0, -0.14))
     fig.tight_layout()
     fig.savefig(os.path.join(a.out, "coderecall.png"), dpi=200)
     plt.close(fig)
@@ -140,12 +160,13 @@ for ax, key, title, ylabel in (
     shown = [arm for arm in arms if vals(arm, key)]
     ys = [float(np.mean(vals(arm, key))) for arm in shown]
     err = [[y - min(vals(arm, key)) for arm, y in zip(shown, ys)], [max(vals(arm, key)) - y for arm, y in zip(shown, ys)]]
-    ax.bar(range(len(shown)), ys, 0.6, color=[color[s] for s in shown], edgecolor=SURFACE, linewidth=1)
+    for i, s in enumerate(shown):
+        bar(ax, i, ys[i], 0.6, s)
     ax.errorbar(range(len(shown)), ys, yerr=err, fmt="none", ecolor=INK2, elinewidth=1, capsize=0)
     for i, y in enumerate(ys):
         ax.text(i, y, f"{y:.2f}", ha="center", va="bottom", fontsize=8, color=INK)
     ax.set_xticks(range(len(shown)))
-    ax.set_xticklabels(shown, fontsize=8)
+    ax.set_xticklabels(shown, fontsize=8, rotation=30 if len(shown) > 6 else 0, ha="right" if len(shown) > 6 else "center")
     style(ax, title, ylabel)
 fig.tight_layout()
 fig.savefig(os.path.join(a.out, "harm.png"), dpi=200)
