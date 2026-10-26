@@ -12,11 +12,13 @@ Runs, models and data live on Modal (see "Infrastructure"); this repo holds code
 * **New method, ICE-V**: the lookup proposes candidates and a backbone that never sees the lookup decides, through a
   log-space pointer-sentinel mixture. **ICE-VR** adds richer candidates. Both are tested in a model with **no
   attention at all** (G).
-* **Headline so far (step 1500 of 1526, ~197M tokens, training-time eval):** G_V (no attention, ~45 B/token)
-  reaches code loss **1.794**, vs B (7:1 hybrid, 2,048 B/token) **1.816** and G (no attention, no ICE) 1.986.
-  The pure recurrent model + ICE-V matches/beats the attention hybrid at ~2% of its cache. One seed; final
-  evaluation pending.
-* **Pending:** the final evaluation of the 200M-token runs runs automatically on Modal (see §6).
+* **Final result (200M tokens, 500-window eval, `results_t200/README.md`):** G_VR (no attention, ~69 B/token table)
+  1.690 code / 3.324 prose vs B (7:1 hybrid, 2,048 B/token KV) 1.730 / 3.384 and G (no attention) 1.899 / 3.444.
+  G_V: 1.703. The verifier removes most of the misleading-lookup harm (lk_wrong: G_C 3.408, G_V 3.251, G_VR 3.211,
+  G 3.215). It does **not** fix stale values / "which object" conflicts (CodeRecall ≤ B for every ICE arm).
+  ICE-off is still worse than G (laziness reduced, not removed). VR's beyond-exact candidates help loss only.
+  One seed.
+* All results are committed; the W&B runs t200_* are uploaded.
 
 ## 2. Background
 
@@ -129,7 +131,7 @@ Read-out so far:
   (ICEIndex incremental candidates), `data.py`, `evals.py`, `config.py`. Tests in `ice_lm/tests/test_ice_lm.py`
   (125).
 
-## 6. Pending results and how to collect them
+## 6. Collected results (done 26 Oct, 23:15)
 
 * On Modal workspace **tien-phat140205** (local profile `run3`), app `ice-lm`, volume `ice-lm`:
   * runs `runs/t200_{B,G,G_C,G_V,G_VR}`; B and G_V were finished at hand-off, the others within ~10 min;
