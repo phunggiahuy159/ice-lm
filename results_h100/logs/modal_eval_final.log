@@ -1,0 +1,103 @@
+Note that running a local entrypoint in detached mode only keeps the last triggered Modal function alive after the parent process has been killed or disconnected.
+✓ Initialized. View run at 
+https://modal.com/apps/yooo/main/ap-6yfako3aGRU6we0ou0d8lx
+✓ Created objects.
+├── ✓ Uploaded /Users/phunghuy/code/gstar/proposal_ice/ice_lm/modal_app.py
+├── ✓ Uploaded /Users/phunghuy/code/gstar/proposal_ice/ice_lm/notebooks
+├── ✓ Uploaded /Users/phunghuy/code/gstar/proposal_ice/ice_lm/tests
+├── ✓ Uploaded /Users/phunghuy/code/gstar/proposal_ice/ice_lm/scripts
+├── ✓ Uploaded /Users/phunghuy/code/gstar/proposal_ice/ice_lm/ice_lm
+├── ✓ Created Function _tests.
+├── ✓ Created Function _tests_cpu.
+├── ✓ Created Function _smoke.
+├── ✓ Created Function _ddp_cpu.
+├── ✓ Created Function _notebook_cpu.
+├── ✓ Created Function _evaluate_when_done.
+├── ✓ Created Function _day0.
+├── ✓ Created Function _smoke_cpu.
+├── ✓ Created Function _evaluate.
+├── ✓ Created Function _train.
+└── ✓ Created Function _prepare.
+waiting for ['140m_B', '140m_C', '140m_C_notrust']
+waiting for ['140m_B', '140m_C', '140m_C_notrust']
+waiting for ['140m_B', '140m_C', '140m_C_notrust']
+waiting for ['140m_B', '140m_C', '140m_C_notrust']
+waiting for ['140m_B', '140m_C', '140m_C_notrust']
+waiting for ['140m_B', '140m_C', '140m_C_notrust']
+waiting for ['140m_B', '140m_C', '140m_C_notrust']
+waiting for ['140m_B', '140m_C', '140m_C_notrust']
+waiting for ['140m_B', '140m_C', '140m_C_notrust']
+waiting for ['140m_B', '140m_C', '140m_C_notrust']
+waiting for ['140m_B', '140m_C', '140m_C_notrust']
+waiting for ['140m_B', '140m_C', '140m_C_notrust']
+waiting for ['140m_B', '140m_C', '140m_C_notrust']
+waiting for ['140m_B', '140m_C', '140m_C_notrust']
+waiting for ['140m_B', '140m_C', '140m_C_notrust']
+waiting for ['140m_B', '140m_C', '140m_C_notrust']
+waiting for ['140m_B', '140m_C', '140m_C_notrust']
+waiting for ['140m_B', '140m_C', '140m_C_notrust']
+waiting for ['140m_B', '140m_C', '140m_C_notrust']
+waiting for ['140m_B', '140m_C', '140m_C_notrust']
+waiting for ['140m_B', '140m_C', '140m_C_notrust']
+waiting for ['140m_B', '140m_C', '140m_C_notrust']
+waiting for ['140m_B', '140m_C', '140m_C_notrust']
+waiting for ['140m_B', '140m_C', '140m_C_notrust']
+waiting for ['140m_B', '140m_C', '140m_C_notrust']
+waiting for ['140m_B', '140m_C', '140m_C_notrust']
+waiting for ['140m_B', '140m_C', '140m_C_notrust']
+waiting for ['140m_B', '140m_C', '140m_C_notrust']
+waiting for ['140m_B', '140m_C', '140m_C_notrust']
+waiting for ['140m_B', '140m_C', '140m_C_notrust']
+waiting for ['140m_B', '140m_C', '140m_C_notrust']
+waiting for ['140m_C', '140m_C_notrust']
+waiting for ['140m_C', '140m_C_notrust']
+waiting for ['140m_C', '140m_C_notrust']
+╭───────────────────── Traceback (most recent call last) ──────────────────────╮
+│ /Users/phunghuy/code/gstar/proposal_ice/ice_lm/modal_app.py:278 in           │
+│ evaluate_when_done                                                           │
+│                                                                              │
+│   277 @app.local_entrypoint()                                                │
+│ ❱ 278 def evaluate(runs: str = "0.6b_A,0.6b_B,0.6b_C", n_task: int = 50, val │
+│   279 │   │   │    extra: str = ""):                                         │
+│                                                                              │
+│ /private/tmp/claude-501/-Users-phunghuy-code-gstar/a1fcb2a4-ae79-48f6-b6e8-3 │
+│ 50e5f8c37f0/scratchpad/mvenv/lib/python3.11/site-packages/modal/_object.py:4 │
+│ 9 in wrapped                                                                 │
+│                                                                              │
+│    48 │   │   await self.hydrate()                                           │
+│ ❱  49 │   │   return await method(self, *args, **kwargs)                     │
+│    50                                                                        │
+│                                                                              │
+│ /private/tmp/claude-501/-Users-phunghuy-code-gstar/a1fcb2a4-ae79-48f6-b6e8-3 │
+│ 50e5f8c37f0/scratchpad/mvenv/lib/python3.11/site-packages/modal/_functions.p │
+│ y:2081 in remote                                                             │
+│                                                                              │
+│   2080 │   │                                                                 │
+│ ❱ 2081 │   │   return await self._call_function(args, kwargs)                │
+│   2082                                                                       │
+│                                                                              │
+│ /private/tmp/claude-501/-Users-phunghuy-code-gstar/a1fcb2a4-ae79-48f6-b6e8-3 │
+│ 50e5f8c37f0/scratchpad/mvenv/lib/python3.11/site-packages/modal/_functions.p │
+│ y:2018 in _call_function                                                     │
+│                                                                              │
+│   2017 │   │                                                                 │
+│ ❱ 2018 │   │   return await invocation.run_function()                        │
+│   2019                                                                       │
+│                                                                              │
+│ /private/tmp/claude-501/-Users-phunghuy-code-gstar/a1fcb2a4-ae79-48f6-b6e8-3 │
+│ 50e5f8c37f0/scratchpad/mvenv/lib/python3.11/site-packages/modal/_functions.p │
+│ y:508 in run_function                                                        │
+│                                                                              │
+│    507 │   │   │   │   │   # We immediately retry internal failures and the  │
+│ ❱  508 │   │   │   │   │   self.attempt_token = await self._retry_input(meta │
+│    509 │   │   │   │   │   continue                                          │
+│                                                                              │
+│ /private/tmp/claude-501/-Users-phunghuy-code-gstar/a1fcb2a4-ae79-48f6-b6e8-3 │
+│ 50e5f8c37f0/scratchpad/mvenv/lib/python3.11/site-packages/modal/_functions.p │
+│ y:528 in _retry_input                                                        │
+│                                                                              │
+│    527 │   │   )                                                             │
+│ ❱  528 │   │   retry_response = await self.stub.AttemptRetry(retry_request,  │
+│    529 │   │   return retry_response.attempt_token                           │
+╰──────────────────────────────────────────────────────────────────────────────╯
+ConflictError: workspace ac-eGB2LYTfR9eyOGTlAuatMe is disabled

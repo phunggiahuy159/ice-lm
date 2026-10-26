@@ -1,0 +1,15 @@
+# model weights / checkpoints (hundreds of MB to GB each)
+*.pt
+*.pt.*
+*.optim*
+# W&B local run folders, caches
+wandb/
+__pycache__/
+*.pyc
+.pytest_cache/
+# local data and scratch
+data/
+smoke_runs/
+ice_lm/ice-kaggle.log
+/--profile
+.DS_Store

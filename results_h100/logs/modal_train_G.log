@@ -1,0 +1,203 @@
+Note that running a local entrypoint in detached mode only keeps the last triggered Modal function alive after the parent process has been killed or disconnected.
+✓ Initialized. View run at 
+https://modal.com/apps/yooo/main/ap-Nx9WL8U2hq9WKGNoj9ZZ4j
+✓ Created objects.
+├── ✓ Uploaded /Users/phunghuy/code/gstar/proposal_ice/ice_lm/modal_app.py
+├── ✓ Uploaded /Users/phunghuy/code/gstar/proposal_ice/ice_lm/notebooks
+├── ✓ Uploaded /Users/phunghuy/code/gstar/proposal_ice/ice_lm/tests
+├── ✓ Uploaded /Users/phunghuy/code/gstar/proposal_ice/ice_lm/scripts
+├── ✓ Uploaded /Users/phunghuy/code/gstar/proposal_ice/ice_lm/ice_lm
+├── ✓ Created Function _tests.
+├── ✓ Created Function _tests_cpu.
+├── ✓ Created Function _smoke_cpu.
+├── ✓ Created Function _ddp_cpu.
+├── ✓ Created Function _notebook_cpu.
+├── ✓ Created Function _smoke.
+├── ✓ Created Function _prepare.
+├── ✓ Created Function _day0.
+├── ✓ Created Function _train.
+├── ✓ Created Function _evaluate.
+└── ✓ Created Function _evaluate_when_done.
++ mkdir -p /tmp/data && cp -n /vol/data/*.bin /vol/data/meta.json /tmp/data/
++ python scripts/train.py --preset 140m --arm G --data_dir /tmp/data --out_dir /vol/runs/140m_G  --micro_batch 8 --grad_checkpointing false --num_workers 6 --max_hours 23.5 
+[gdn] backend=auto -> fla (rel_err=6.30e-03, grads_ok=True, state_ok=True)
+[train] preset=140m arm=G device=cuda world=1 amp=torch.bfloat16 scaler=False
+[train] params total=147.7M  non-embedding=123.2M  ICE=0.00M
+[train] layout: G G G G G G G G G G G G G G G G   (A=attention, G=GDN, h=mixed heads)   KV bytes/token=0
+wandb: [wandb.login()] Loaded credentials for https://api.forge.coreweave.com from WANDB_API_KEY.
+wandb: Currently logged in as: phunghuysoict (phunghuysoict-hust) to https://api.forge.coreweave.com. Use `wandb login --relogin` to force relogin
+wandb: setting up run c51d28357727
+wandb: Tracking run with wandb version 0.31.0
+wandb: Run data is saved locally in /vol/runs/140m_G/wandb/run-20261026_140119-c51d28357727
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run 140m_G
+wandb: ⭐️ View project at https://forge.coreweave.com/wandb/phunghuysoict-hust/ice-lm
+wandb: 🚀 View run at https://forge.coreweave.com/wandb/phunghuysoict-hust/ice-lm/runs/c51d28357727
+[train] steps=3052 (now 0)  grad_accum=4  tokens/step=131,072  warmup_steps=153
+step      1/3052  loss 10.5103  lr 6.54e-06  gnorm 6.89  tok/s 1,679  tokens 0.1M  eta 66.1h
+step     10/3052  loss 10.1906  lr 6.54e-05  gnorm 6.70  tok/s 83,406  tokens 1.3M  eta 1.3h
+step     20/3052  loss 8.8316  lr 1.31e-04  gnorm 1.74  tok/s 85,139  tokens 2.6M  eta 1.3h
+step     30/3052  loss 7.8245  lr 1.96e-04  gnorm 1.66  tok/s 85,172  tokens 3.9M  eta 1.3h
+step     40/3052  loss 7.0194  lr 2.61e-04  gnorm 1.19  tok/s 85,150  tokens 5.2M  eta 1.3h
+step     50/3052  loss 6.9232  lr 3.27e-04  gnorm 0.88  tok/s 85,147  tokens 6.6M  eta 1.3h
+step     60/3052  loss 6.6348  lr 3.92e-04  gnorm 0.73  tok/s 85,134  tokens 7.9M  eta 1.3h
+step     70/3052  loss 6.3317  lr 4.58e-04  gnorm 0.94  tok/s 85,127  tokens 9.2M  eta 1.3h
+step     80/3052  loss 6.1004  lr 5.23e-04  gnorm 0.86  tok/s 85,133  tokens 10.5M  eta 1.3h
+step     90/3052  loss 5.9008  lr 5.88e-04  gnorm 1.03  tok/s 85,145  tokens 11.8M  eta 1.3h
+step    100/3052  loss 5.9218  lr 6.54e-04  gnorm 0.72  tok/s 85,161  tokens 13.1M  eta 1.3h
+step    110/3052  loss 5.4832  lr 7.19e-04  gnorm 0.76  tok/s 85,152  tokens 14.4M  eta 1.3h
+step    120/3052  loss 5.4567  lr 7.84e-04  gnorm 0.69  tok/s 85,142  tokens 15.7M  eta 1.3h
+step    130/3052  loss 5.5675  lr 8.50e-04  gnorm 0.70  tok/s 85,139  tokens 17.0M  eta 1.2h
+step    140/3052  loss 5.3309  lr 9.15e-04  gnorm 0.73  tok/s 85,149  tokens 18.4M  eta 1.2h
+step    150/3052  loss 5.2440  lr 9.80e-04  gnorm 0.61  tok/s 85,124  tokens 19.7M  eta 1.2h
+step    160/3052  loss 5.2687  lr 1.00e-03  gnorm 0.55  tok/s 85,110  tokens 21.0M  eta 1.2h
+step    170/3052  loss 4.8458  lr 1.00e-03  gnorm 0.57  tok/s 85,125  tokens 22.3M  eta 1.2h
+step    180/3052  loss 4.6756  lr 1.00e-03  gnorm 0.54  tok/s 85,113  tokens 23.6M  eta 1.2h
+step    190/3052  loss 4.7787  lr 1.00e-03  gnorm 0.62  tok/s 85,137  tokens 24.9M  eta 1.2h
+step    200/3052  loss 4.9439  lr 9.99e-04  gnorm 0.70  tok/s 85,111  tokens 26.2M  eta 1.2h
+step    210/3052  loss 4.6763  lr 9.99e-04  gnorm 0.57  tok/s 85,102  tokens 27.5M  eta 1.2h
+step    220/3052  loss 4.8040  lr 9.99e-04  gnorm 0.54  tok/s 85,125  tokens 28.8M  eta 1.2h
+step    230/3052  loss 4.5372  lr 9.98e-04  gnorm 0.52  tok/s 85,125  tokens 30.1M  eta 1.2h
+step    240/3052  loss 4.4465  lr 9.98e-04  gnorm 0.51  tok/s 85,123  tokens 31.5M  eta 1.2h
+step    250/3052  loss 4.6205  lr 9.98e-04  gnorm 0.44  tok/s 85,129  tokens 32.8M  eta 1.2h
+[eval] prose/all_loss=4.7300  prose/copyable_loss=4.2035  prose/lk_wrong_loss=5.3405  prose/follow_wrong_lookup=0.0977  code/all_loss=3.8173  code/copyable_loss=3.7347  code/lk_wrong_loss=4.6813  code/follow_wrong_lookup=0.1191
+step    260/3052  loss 4.5874  lr 9.97e-04  gnorm 0.44  tok/s 70,769  tokens 34.1M  eta 1.4h
+step    270/3052  loss 4.3383  lr 9.96e-04  gnorm 0.40  tok/s 85,132  tokens 35.4M  eta 1.2h
+step    280/3052  loss 4.4131  lr 9.96e-04  gnorm 0.53  tok/s 85,145  tokens 36.7M  eta 1.2h
+step    290/3052  loss 4.1646  lr 9.95e-04  gnorm 0.44  tok/s 85,143  tokens 38.0M  eta 1.2h
+step    300/3052  loss 4.1851  lr 9.94e-04  gnorm 0.36  tok/s 85,145  tokens 39.3M  eta 1.2h
+step    310/3052  loss 4.1505  lr 9.94e-04  gnorm 0.45  tok/s 85,145  tokens 40.6M  eta 1.2h
+step    320/3052  loss 4.3221  lr 9.93e-04  gnorm 0.39  tok/s 85,143  tokens 41.9M  eta 1.2h
+step    330/3052  loss 4.4008  lr 9.92e-04  gnorm 0.37  tok/s 85,154  tokens 43.3M  eta 1.2h
+step    340/3052  loss 3.9863  lr 9.91e-04  gnorm 0.42  tok/s 85,154  tokens 44.6M  eta 1.2h
+step    350/3052  loss 4.0272  lr 9.90e-04  gnorm 0.38  tok/s 85,157  tokens 45.9M  eta 1.2h
+step    360/3052  loss 4.2017  lr 9.89e-04  gnorm 0.37  tok/s 85,142  tokens 47.2M  eta 1.2h
+step    370/3052  loss 4.0911  lr 9.88e-04  gnorm 0.34  tok/s 85,147  tokens 48.5M  eta 1.1h
+step    380/3052  loss 4.1913  lr 9.87e-04  gnorm 0.36  tok/s 85,150  tokens 49.8M  eta 1.1h
+step    390/3052  loss 4.0144  lr 9.85e-04  gnorm 0.34  tok/s 84,492  tokens 51.1M  eta 1.1h
+step    400/3052  loss 4.1462  lr 9.84e-04  gnorm 0.37  tok/s 85,151  tokens 52.4M  eta 1.1h
+step    410/3052  loss 3.9628  lr 9.83e-04  gnorm 0.32  tok/s 85,152  tokens 53.7M  eta 1.1h
+step    420/3052  loss 4.0132  lr 9.81e-04  gnorm 0.34  tok/s 85,132  tokens 55.1M  eta 1.1h
+step    430/3052  loss 3.9504  lr 9.80e-04  gnorm 0.39  tok/s 85,130  tokens 56.4M  eta 1.1h
+step    440/3052  loss 3.9563  lr 9.79e-04  gnorm 0.33  tok/s 85,129  tokens 57.7M  eta 1.1h
+step    450/3052  loss 3.9131  lr 9.77e-04  gnorm 0.34  tok/s 85,133  tokens 59.0M  eta 1.1h
+step    460/3052  loss 4.0201  lr 9.75e-04  gnorm 0.55  tok/s 85,126  tokens 60.3M  eta 1.1h
+step    470/3052  loss 3.9486  lr 9.74e-04  gnorm 0.42  tok/s 85,132  tokens 61.6M  eta 1.1h
+step    480/3052  loss 3.5442  lr 9.72e-04  gnorm 0.36  tok/s 85,131  tokens 62.9M  eta 1.1h
+step    490/3052  loss 3.7746  lr 9.70e-04  gnorm 0.43  tok/s 85,136  tokens 64.2M  eta 1.1h
+step    500/3052  loss 3.7244  lr 9.69e-04  gnorm 0.30  tok/s 85,137  tokens 65.5M  eta 1.1h
+[eval] prose/all_loss=4.1215  prose/copyable_loss=3.4417  prose/lk_wrong_loss=4.8575  prose/follow_wrong_lookup=0.0991  code/all_loss=3.0501  code/copyable_loss=2.7712  code/lk_wrong_loss=4.1583  code/follow_wrong_lookup=0.1456
+step    510/3052  loss 3.8086  lr 9.67e-04  gnorm 0.35  tok/s 71,171  tokens 66.8M  eta 1.3h
+step    520/3052  loss 3.7220  lr 9.65e-04  gnorm 0.35  tok/s 85,137  tokens 68.2M  eta 1.1h
+step    530/3052  loss 3.8285  lr 9.63e-04  gnorm 0.34  tok/s 85,130  tokens 69.5M  eta 1.1h
+step    540/3052  loss 3.4730  lr 9.61e-04  gnorm 0.33  tok/s 85,138  tokens 70.8M  eta 1.1h
+step    550/3052  loss 3.6470  lr 9.59e-04  gnorm 0.34  tok/s 85,134  tokens 72.1M  eta 1.1h
+step    560/3052  loss 3.6162  lr 9.57e-04  gnorm 0.67  tok/s 85,142  tokens 73.4M  eta 1.1h
+step    570/3052  loss 3.9253  lr 9.55e-04  gnorm 0.28  tok/s 85,133  tokens 74.7M  eta 1.1h
+step    580/3052  loss 3.6446  lr 9.53e-04  gnorm 0.34  tok/s 85,128  tokens 76.0M  eta 1.1h
+step    590/3052  loss 3.7479  lr 9.51e-04  gnorm 0.33  tok/s 85,142  tokens 77.3M  eta 1.1h
+step    600/3052  loss 3.6507  lr 9.48e-04  gnorm 0.29  tok/s 85,148  tokens 78.6M  eta 1.0h
+step    610/3052  loss 3.9677  lr 9.46e-04  gnorm 0.32  tok/s 85,148  tokens 80.0M  eta 1.0h
+step    620/3052  loss 3.5776  lr 9.44e-04  gnorm 0.30  tok/s 85,143  tokens 81.3M  eta 1.0h
+step    630/3052  loss 3.6281  lr 9.41e-04  gnorm 0.33  tok/s 85,135  tokens 82.6M  eta 1.0h
+step    640/3052  loss 3.7355  lr 9.39e-04  gnorm 0.30  tok/s 85,146  tokens 83.9M  eta 1.0h
+step    650/3052  loss 3.4616  lr 9.37e-04  gnorm 0.32  tok/s 85,139  tokens 85.2M  eta 1.0h
+step    660/3052  loss 3.5031  lr 9.34e-04  gnorm 0.29  tok/s 85,136  tokens 86.5M  eta 1.0h
+step    670/3052  loss 3.7838  lr 9.31e-04  gnorm 0.30  tok/s 85,143  tokens 87.8M  eta 1.0h
+step    680/3052  loss 3.1936  lr 9.29e-04  gnorm 0.37  tok/s 85,136  tokens 89.1M  eta 1.0h
+step    690/3052  loss 3.3617  lr 9.26e-04  gnorm 0.29  tok/s 85,146  tokens 90.4M  eta 1.0h
+step    700/3052  loss 3.6187  lr 9.23e-04  gnorm 0.26  tok/s 85,145  tokens 91.8M  eta 1.0h
+step    710/3052  loss 3.4928  lr 9.21e-04  gnorm 0.36  tok/s 85,155  tokens 93.1M  eta 1.0h
+step    720/3052  loss 3.4227  lr 9.18e-04  gnorm 0.33  tok/s 85,148  tokens 94.4M  eta 1.0h
+step    730/3052  loss 3.4098  lr 9.15e-04  gnorm 0.28  tok/s 85,154  tokens 95.7M  eta 1.0h
+step    740/3052  loss 3.3264  lr 9.12e-04  gnorm 0.31  tok/s 85,153  tokens 97.0M  eta 1.0h
+step    750/3052  loss 3.1230  lr 9.09e-04  gnorm 0.29  tok/s 85,149  tokens 98.3M  eta 1.0h
+[eval] prose/all_loss=3.7773  prose/copyable_loss=2.8646  prose/lk_wrong_loss=4.6201  prose/follow_wrong_lookup=0.1108  code/all_loss=2.4604  code/copyable_loss=1.9731  code/lk_wrong_loss=3.7970  code/follow_wrong_lookup=0.1864
+step    760/3052  loss 3.5169  lr 9.06e-04  gnorm 0.26  tok/s 71,080  tokens 99.6M  eta 1.2h
+step    770/3052  loss 3.3790  lr 9.03e-04  gnorm 0.36  tok/s 85,162  tokens 100.9M  eta 1.0h
+step    780/3052  loss 3.4396  lr 9.00e-04  gnorm 0.28  tok/s 84,551  tokens 102.2M  eta 1.0h
+step    790/3052  loss 3.5050  lr 8.97e-04  gnorm 0.26  tok/s 85,133  tokens 103.5M  eta 1.0h
+step    800/3052  loss 3.4778  lr 8.94e-04  gnorm 0.27  tok/s 85,140  tokens 104.9M  eta 1.0h
+step    810/3052  loss 3.3896  lr 8.91e-04  gnorm 0.25  tok/s 85,147  tokens 106.2M  eta 1.0h
+step    820/3052  loss 3.1915  lr 8.88e-04  gnorm 0.27  tok/s 85,140  tokens 107.5M  eta 1.0h
+step    830/3052  loss 3.1332  lr 8.85e-04  gnorm 0.30  tok/s 85,125  tokens 108.8M  eta 1.0h
+step    840/3052  loss 3.3835  lr 8.81e-04  gnorm 0.24  tok/s 85,136  tokens 110.1M  eta 0.9h
+step    850/3052  loss 3.2105  lr 8.78e-04  gnorm 0.27  tok/s 85,147  tokens 111.4M  eta 0.9h
+step    860/3052  loss 3.1664  lr 8.75e-04  gnorm 0.25  tok/s 85,140  tokens 112.7M  eta 0.9h
+step    870/3052  loss 3.2327  lr 8.71e-04  gnorm 0.27  tok/s 85,144  tokens 114.0M  eta 0.9h
+step    880/3052  loss 3.4540  lr 8.68e-04  gnorm 0.25  tok/s 85,138  tokens 115.3M  eta 0.9h
+step    890/3052  loss 3.1414  lr 8.64e-04  gnorm 0.28  tok/s 85,139  tokens 116.7M  eta 0.9h
+step    900/3052  loss 3.1184  lr 8.61e-04  gnorm 0.25  tok/s 85,149  tokens 118.0M  eta 0.9h
+step    910/3052  loss 3.4705  lr 8.57e-04  gnorm 0.28  tok/s 85,157  tokens 119.3M  eta 0.9h
+step    920/3052  loss 3.3255  lr 8.54e-04  gnorm 0.25  tok/s 85,154  tokens 120.6M  eta 0.9h
+step    930/3052  loss 3.0452  lr 8.50e-04  gnorm 0.26  tok/s 85,162  tokens 121.9M  eta 0.9h
+step    940/3052  loss 3.2126  lr 8.46e-04  gnorm 0.26  tok/s 85,157  tokens 123.2M  eta 0.9h
+step    950/3052  loss 3.1691  lr 8.43e-04  gnorm 0.25  tok/s 85,149  tokens 124.5M  eta 0.9h
+step    960/3052  loss 3.3300  lr 8.39e-04  gnorm 0.30  tok/s 85,158  tokens 125.8M  eta 0.9h
+step    970/3052  loss 3.2426  lr 8.35e-04  gnorm 0.26  tok/s 85,153  tokens 127.1M  eta 0.9h
+step    980/3052  loss 3.1955  lr 8.31e-04  gnorm 0.24  tok/s 85,163  tokens 128.5M  eta 0.9h
+step    990/3052  loss 3.0844  lr 8.28e-04  gnorm 0.26  tok/s 85,164  tokens 129.8M  eta 0.9h
+Traceback (most recent call last):
+  File "/root/ice_lm/scripts/train.py", line 272, in <module>
+    main()
+  File "/root/ice_lm/scripts/train.py", line 193, in main
+    (scaler.scale(loss) if scaler else loss).backward()
+  File "/usr/local/lib/python3.11/site-packages/torch/_tensor.py", line 626, in backward
+    torch.autograd.backward(
+  File "/usr/local/lib/python3.11/site-packages/torch/autograd/__init__.py", line 347, in backward
+    _engine_run_backward(
+  File "/usr/local/lib/python3.11/site-packages/torch/autograd/graph.py", line 823, in _engine_run_backward
+    return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+[1;34mwandb[0m: 
+[1;34mwandb[0m: 🚀 View run [33m140m_G[0m at: [34mhttps://forge.coreweave.com/wandb/phunghuysoict-hust/ice-lm/runs/c51d28357727[0m
+[1;34mwandb[0m: Find logs at: [1;35m../../vol/runs/140m_G/wandb/run-20261026_140119-c51d28357727/logs[0m
+╭───────────────────── Traceback (most recent call last) ──────────────────────╮
+│ /Users/phunghuy/code/gstar/proposal_ice/ice_lm/modal_app.py:264 in train     │
+│                                                                              │
+│   263                                                                        │
+│ ❱ 264 @app.local_entrypoint()                                                │
+│   265 def day0():                                                            │
+│                                                                              │
+│ /private/tmp/claude-501/-Users-phunghuy-code-gstar/a1fcb2a4-ae79-48f6-b6e8-3 │
+│ 50e5f8c37f0/scratchpad/mvenv/lib/python3.11/site-packages/modal/_object.py:4 │
+│ 9 in wrapped                                                                 │
+│                                                                              │
+│    48 │   │   await self.hydrate()                                           │
+│ ❱  49 │   │   return await method(self, *args, **kwargs)                     │
+│    50                                                                        │
+│                                                                              │
+│ /private/tmp/claude-501/-Users-phunghuy-code-gstar/a1fcb2a4-ae79-48f6-b6e8-3 │
+│ 50e5f8c37f0/scratchpad/mvenv/lib/python3.11/site-packages/modal/_functions.p │
+│ y:2081 in remote                                                             │
+│                                                                              │
+│   2080 │   │                                                                 │
+│ ❱ 2081 │   │   return await self._call_function(args, kwargs)                │
+│   2082                                                                       │
+│                                                                              │
+│ /private/tmp/claude-501/-Users-phunghuy-code-gstar/a1fcb2a4-ae79-48f6-b6e8-3 │
+│ 50e5f8c37f0/scratchpad/mvenv/lib/python3.11/site-packages/modal/_functions.p │
+│ y:2018 in _call_function                                                     │
+│                                                                              │
+│   2017 │   │                                                                 │
+│ ❱ 2018 │   │   return await invocation.run_function()                        │
+│   2019                                                                       │
+│                                                                              │
+│ /private/tmp/claude-501/-Users-phunghuy-code-gstar/a1fcb2a4-ae79-48f6-b6e8-3 │
+│ 50e5f8c37f0/scratchpad/mvenv/lib/python3.11/site-packages/modal/_functions.p │
+│ y:508 in run_function                                                        │
+│                                                                              │
+│    507 │   │   │   │   │   # We immediately retry internal failures and the  │
+│ ❱  508 │   │   │   │   │   self.attempt_token = await self._retry_input(meta │
+│    509 │   │   │   │   │   continue                                          │
+│                                                                              │
+│ /private/tmp/claude-501/-Users-phunghuy-code-gstar/a1fcb2a4-ae79-48f6-b6e8-3 │
+│ 50e5f8c37f0/scratchpad/mvenv/lib/python3.11/site-packages/modal/_functions.p │
+│ y:528 in _retry_input                                                        │
+│                                                                              │
+│    527 │   │   )                                                             │
+│ ❱  528 │   │   retry_response = await self.stub.AttemptRetry(retry_request,  │
+│    529 │   │   return retry_response.attempt_token                           │
+╰──────────────────────────────────────────────────────────────────────────────╯
+ConflictError: workspace ac-eGB2LYTfR9eyOGTlAuatMe is disabled

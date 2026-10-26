@@ -1,0 +1,72 @@
+[gdn] backend=auto -> fla (rel_err=6.30e-03, grads_ok=True, state_ok=True)
+[train] preset=140m arm=B device=cuda world=1 amp=torch.bfloat16 scaler=False
+[train] params total=144.9M  non-embedding=120.3M  ICE=0.00M
+[train] layout: G G G G G G G A G G G G G G G A   (A=attention, G=GDN, h=mixed heads)   KV bytes/token=2048
+[train] steps=611 (now 0)  grad_accum=16  tokens/step=131,072  warmup_steps=76
+step      1/611  loss 10.5119  lr 1.32e-05  gnorm 6.18  tok/s 21,817  tokens 0.1M  eta 1.0h
+step     10/611  loss 9.1954  lr 1.32e-04  gnorm 1.97  tok/s 22,935  tokens 1.3M  eta 1.0h
+step     20/611  loss 8.0318  lr 2.63e-04  gnorm 1.34  tok/s 22,845  tokens 2.6M  eta 0.9h
+step     30/611  loss 7.1343  lr 3.95e-04  gnorm 0.86  tok/s 22,822  tokens 3.9M  eta 0.9h
+step     40/611  loss 6.7718  lr 5.26e-04  gnorm 1.28  tok/s 22,829  tokens 5.2M  eta 0.9h
+step     50/611  loss 6.5278  lr 6.58e-04  gnorm 0.77  tok/s 22,825  tokens 6.6M  eta 0.9h
+step     60/611  loss 6.3605  lr 7.89e-04  gnorm 0.65  tok/s 22,761  tokens 7.9M  eta 0.9h
+step     70/611  loss 6.4131  lr 9.21e-04  gnorm 1.09  tok/s 22,783  tokens 9.2M  eta 0.9h
+step     80/611  loss 6.1368  lr 1.00e-03  gnorm 0.65  tok/s 22,764  tokens 10.5M  eta 0.8h
+step     90/611  loss 5.8011  lr 9.99e-04  gnorm 0.59  tok/s 22,808  tokens 11.8M  eta 0.8h
+step    100/611  loss 5.6782  lr 9.96e-04  gnorm 0.68  tok/s 22,819  tokens 13.1M  eta 0.8h
+step    110/611  loss 5.4097  lr 9.92e-04  gnorm 0.45  tok/s 22,795  tokens 14.4M  eta 0.8h
+step    120/611  loss 5.4909  lr 9.86e-04  gnorm 0.72  tok/s 22,788  tokens 15.7M  eta 0.8h
+step    130/611  loss 5.3582  lr 9.78e-04  gnorm 0.37  tok/s 22,784  tokens 17.0M  eta 0.8h
+step    140/611  loss 5.2237  lr 9.70e-04  gnorm 0.44  tok/s 22,800  tokens 18.4M  eta 0.8h
+step    150/611  loss 4.9838  lr 9.59e-04  gnorm 0.47  tok/s 22,779  tokens 19.7M  eta 0.7h
+step    160/611  loss 4.9834  lr 9.48e-04  gnorm 0.60  tok/s 22,827  tokens 21.0M  eta 0.7h
+step    170/611  loss 5.0902  lr 9.35e-04  gnorm 0.46  tok/s 22,827  tokens 22.3M  eta 0.7h
+step    180/611  loss 4.8278  lr 9.20e-04  gnorm 0.41  tok/s 22,824  tokens 23.6M  eta 0.7h
+step    190/611  loss 5.0837  lr 9.05e-04  gnorm 0.38  tok/s 22,802  tokens 24.9M  eta 0.7h
+step    200/611  loss 4.8780  lr 8.88e-04  gnorm 0.41  tok/s 22,792  tokens 26.2M  eta 0.7h
+[eval] prose/all_loss=5.0741  prose/copyable_loss=4.4121  prose/lk_wrong_loss=5.6319  prose/follow_wrong_lookup=0.0950  code/all_loss=3.8690  code/copyable_loss=3.7551  code/lk_wrong_loss=4.6493  code/follow_wrong_lookup=0.1202
+step    210/611  loss 4.7598  lr 8.70e-04  gnorm 0.45  tok/s 21,942  tokens 27.5M  eta 0.7h
+step    220/611  loss 4.6400  lr 8.50e-04  gnorm 0.39  tok/s 22,778  tokens 28.8M  eta 0.6h
+step    230/611  loss 4.7505  lr 8.30e-04  gnorm 0.49  tok/s 22,796  tokens 30.1M  eta 0.6h
+step    240/611  loss 4.5631  lr 8.09e-04  gnorm 0.36  tok/s 22,760  tokens 31.5M  eta 0.6h
+step    250/611  loss 4.1013  lr 7.87e-04  gnorm 0.44  tok/s 22,801  tokens 32.8M  eta 0.6h
+step    260/611  loss 4.4910  lr 7.64e-04  gnorm 0.36  tok/s 22,794  tokens 34.1M  eta 0.6h
+step    270/611  loss 4.3477  lr 7.41e-04  gnorm 0.36  tok/s 22,807  tokens 35.4M  eta 0.5h
+step    280/611  loss 4.3863  lr 7.16e-04  gnorm 0.38  tok/s 22,791  tokens 36.7M  eta 0.5h
+step    290/611  loss 4.3486  lr 6.92e-04  gnorm 0.35  tok/s 22,785  tokens 38.0M  eta 0.5h
+step    300/611  loss 4.3105  lr 6.66e-04  gnorm 0.36  tok/s 22,808  tokens 39.3M  eta 0.5h
+step    310/611  loss 4.4400  lr 6.41e-04  gnorm 0.34  tok/s 22,812  tokens 40.6M  eta 0.5h
+[train] checkpoint saved at step 313
+step    320/611  loss 4.3577  lr 6.15e-04  gnorm 0.44  tok/s 22,376  tokens 41.9M  eta 0.5h
+step    330/611  loss 4.1653  lr 5.88e-04  gnorm 0.32  tok/s 22,787  tokens 43.3M  eta 0.4h
+step    340/611  loss 4.1926  lr 5.62e-04  gnorm 0.37  tok/s 22,790  tokens 44.6M  eta 0.4h
+step    350/611  loss 4.0610  lr 5.35e-04  gnorm 0.35  tok/s 22,821  tokens 45.9M  eta 0.4h
+step    360/611  loss 4.1957  lr 5.09e-04  gnorm 0.33  tok/s 22,807  tokens 47.2M  eta 0.4h
+step    370/611  loss 3.9133  lr 4.83e-04  gnorm 0.44  tok/s 22,812  tokens 48.5M  eta 0.4h
+step    380/611  loss 4.1028  lr 4.57e-04  gnorm 0.36  tok/s 22,810  tokens 49.8M  eta 0.4h
+step    390/611  loss 4.0766  lr 4.31e-04  gnorm 0.32  tok/s 22,835  tokens 51.1M  eta 0.4h
+step    400/611  loss 3.9208  lr 4.06e-04  gnorm 0.30  tok/s 22,844  tokens 52.4M  eta 0.3h
+[eval] prose/all_loss=4.3037  prose/copyable_loss=3.5746  prose/lk_wrong_loss=5.0558  prose/follow_wrong_lookup=0.0972  code/all_loss=3.1313  code/copyable_loss=2.8779  code/lk_wrong_loss=4.1265  code/follow_wrong_lookup=0.1406
+step    410/611  loss 3.9427  lr 3.81e-04  gnorm 0.29  tok/s 22,035  tokens 53.7M  eta 0.3h
+step    420/611  loss 3.9672  lr 3.57e-04  gnorm 0.35  tok/s 22,785  tokens 55.1M  eta 0.3h
+step    430/611  loss 3.7672  lr 3.33e-04  gnorm 0.32  tok/s 22,819  tokens 56.4M  eta 0.3h
+step    440/611  loss 3.9721  lr 3.11e-04  gnorm 0.33  tok/s 22,834  tokens 57.7M  eta 0.3h
+step    450/611  loss 3.8291  lr 2.89e-04  gnorm 0.33  tok/s 22,818  tokens 59.0M  eta 0.3h
+step    460/611  loss 3.9257  lr 2.68e-04  gnorm 0.33  tok/s 22,801  tokens 60.3M  eta 0.2h
+step    470/611  loss 3.6522  lr 2.48e-04  gnorm 0.37  tok/s 22,812  tokens 61.6M  eta 0.2h
+step    480/611  loss 3.8906  lr 2.29e-04  gnorm 0.30  tok/s 22,812  tokens 62.9M  eta 0.2h
+step    490/611  loss 3.7340  lr 2.11e-04  gnorm 0.31  tok/s 22,836  tokens 64.2M  eta 0.2h
+step    500/611  loss 3.9996  lr 1.94e-04  gnorm 0.32  tok/s 22,836  tokens 65.5M  eta 0.2h
+step    510/611  loss 3.8881  lr 1.78e-04  gnorm 0.30  tok/s 22,815  tokens 66.8M  eta 0.2h
+step    520/611  loss 3.7473  lr 1.64e-04  gnorm 0.32  tok/s 22,840  tokens 68.2M  eta 0.1h
+step    530/611  loss 3.9896  lr 1.51e-04  gnorm 0.31  tok/s 22,839  tokens 69.5M  eta 0.1h
+step    540/611  loss 3.8763  lr 1.40e-04  gnorm 0.35  tok/s 22,826  tokens 70.8M  eta 0.1h
+step    550/611  loss 3.8699  lr 1.29e-04  gnorm 0.34  tok/s 22,840  tokens 72.1M  eta 0.1h
+step    560/611  loss 3.7406  lr 1.21e-04  gnorm 0.34  tok/s 22,822  tokens 73.4M  eta 0.1h
+step    570/611  loss 3.6335  lr 1.14e-04  gnorm 0.36  tok/s 22,842  tokens 74.7M  eta 0.1h
+step    580/611  loss 3.7163  lr 1.08e-04  gnorm 0.30  tok/s 22,825  tokens 76.0M  eta 0.0h
+step    590/611  loss 3.7377  lr 1.04e-04  gnorm 0.31  tok/s 22,828  tokens 77.3M  eta 0.0h
+step    600/611  loss 3.6170  lr 1.01e-04  gnorm 0.33  tok/s 22,788  tokens 78.6M  eta 0.0h
+[eval] prose/all_loss=4.0429  prose/copyable_loss=3.2544  prose/lk_wrong_loss=4.8618  prose/follow_wrong_lookup=0.1010  code/all_loss=2.7979  code/copyable_loss=2.4773  code/lk_wrong_loss=3.9050  code/follow_wrong_lookup=0.1539
+step    610/611  loss 3.5590  lr 1.00e-04  gnorm 0.35  tok/s 22,000  tokens 80.0M  eta 0.0h
+[train] finished: 80.1M tokens -> /workspace/runs/140m_B/model_final.pt
