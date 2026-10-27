@@ -111,6 +111,50 @@ The same verifier with **K = 34 slots**:
 
 The verifier has 2.7K parameters in total. The compact table measures 82–90 B/token (§5.4).
 
+### 3.3a How the verifier works, on real numbers (`research/round3/verifier_walkthrough.py`, CPU, real G_VR)
+**Nothing is hand-set.** b, L, D, γ, w, β and c0 are learned by gradient descent on −log p(y). If a candidate is
+the true token, raising its score raises p(y). If no candidate is right, the only way to keep p(y) high is to put
+weight on the sentinel (π0 → 1). Over 200M tokens, the verifier learns which slot types, match lengths and distances
+are reliable, and how much to trust the model.
+
+**Learned weights:**
+- **b ≈ −2.3 to −3.4 for every slot:** low trust by default.
+- **L > 0 for long matches.**
+- **γ > 0 for short orders and anchors** (order 1: +0.28, anchors +0.56 to +0.61): a candidate counts only if the
+  model also finds it plausible. This is the "check".
+- **γ ≤ 0 for long orders** (order 6: −0.01, order 8: −0.17): a long exact match is trusted *even when the model
+  disagrees*, because that is exactly when the copy is needed.
+
+The sentinel s0 = wᵀRMSNorm(h) + β·max log p_LM + c0 is the model's own "I am confident here" signal.
+
+**Averages over 3 windows of 4K held-out code tokens:**
+
+| Lookup | Share | π0 (weight on the model) | Loss change vs the backbone alone |
+|---|---|---|---|
+| s* right | 43–58% | 0.34–0.49 | −0.57 to −0.80 |
+| s* wrong, another candidate right | 10–17% | 0.56–0.73 | −0.46 to −0.57 |
+| s* wrong, no candidate right | 18–25% | 0.73–0.82 | **+0.25 to +0.42** (= −log π0) |
+| no match | 12–21% | 0.97–0.98 | ≈ 0 |
+
+**Why a wrong lookup costs something but is bounded:**
+- **If no candidate is the true token,** p_final(y) = π0 · p_LM(y) exactly, so the loss rises by −log π0. The
+  verifier keeps π0 high where the candidates look bad, which limits the cost.
+- **The old ICE added a bonus to the logits** with no sentinel, so a wrong s* was pushed up regardless.
+
+**Why "VR's harm ≈ 0" is a cancellation, not "no effect":**
+- On lk_wrong tokens, G_VR with ICE on (3.211) is 0.051 *worse* than its own backbone with ICE off (3.160).
+- That backbone is 0.055 *better* than G (3.215) there.
+- The two nearly cancel, so 3.211 vs 3.215.
+
+**Real examples (G_VR):**
+- **Lookup right, model unsure:** after `with warnings_state(self.module):\n with`, the backbone gives the true token
+  `original` p = 0.001. An order-8 match (length 14) proposes it, and the final p is **0.90**.
+- **Lookup wrong, model disagrees:** π0 = 0.53. The wrong `,` still gets π = 0.27, because short-order γ is small.
+  This is why the follow-wrong rate stays at 34%: the verifier down-weights but does not veto.
+- **Longest match wrong, another candidate right:** s* = `module` gets π = 0.09; the right `try` (order 3, second
+  occurrence) gets 0.04. The final p rises from 0.035 to 0.066. The verifier cannot tell which of two equal-length
+  occurrences applies: this is the conflict weakness that V2 targets.
+
 ### 3.4 ICE-V2 (arms G_VR2, `fit_*_v2`): candidates compared with each other (being tested on Kaggle)
 Spec: `research/round2/decision2.md` §2 and `research/round2/impl_v2_notes.md`.
 
