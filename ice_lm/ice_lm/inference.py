@@ -8,6 +8,8 @@ agreement of the two most recent occurrences and the online reliability of each 
 With cand="v" / "vr" it also returns the ICE-V / VR candidate slots (ice_features.V_KEYS). V needs nothing new
 (the second occurrence is already in the tables); VR also keeps, per order, the previous occurrence of the key
 ending at each position (one int32 per order per token: the suffix chain and the anchor lookups).
+With v2=True it also returns the source positions of the slots (ice_features.SRC_KEY) and the ICE-V2 slot features
+(ice_features.V2_KEYS), computed from the current slots alone (no extra state, 0 bytes per token).
 
 It runs on the CPU, next to the sampling loop; only ~10 small integers per order go to the GPU per step.
 Two memory numbers are reported:
@@ -26,9 +28,10 @@ from typing import Dict, List, Optional, Sequence
 import numpy as np
 import torch
 
-from .ice_features import (ANCHOR_ORDERS, ANCHOR_WINDOW, CHAIN_OCC, DEFAULT_ORDERS, MAX_MATCH, N_ANCHORS,
-                           N_DIST_BUCKETS, REL_EDGES, REL_WINDOW, SPAN, V_KEYS, _dist_bucket, _len_bucket,
-                           compute_ice_features, get_alpha_mask, n_slots, segments_from_eos)
+from .ice_features import (ANCHOR_ORDERS, ANCHOR_WINDOW, CHAIN_OCC, CNT_MAX, DEFAULT_ORDERS, DELTA_CLIP, DELTA_NONE,
+                           DELTA_OFF, MAX_MATCH, N_ANCHORS, N_DIST_BUCKETS, REC_MAX, REL_EDGES, REL_WINDOW, SPAN,
+                           SRC_KEY, V2_KEYS, V_KEYS, _dist_bucket, _len_bucket, compute_ice_features, get_alpha_mask,
+                           n_occ_slots, n_slots, segments_from_eos)
 
 FEATURE_KEYS_N = ("ice_succ", "ice_len", "ice_dist", "ice_agree", "ice_rel")      # [N] per position
 FEATURE_KEYS_1 = ("ice_s_star", "ice_len_star", "ice_agree_star", "ice_rel_star", "ice_match_len",
@@ -48,9 +51,10 @@ def _rel_bucket(hist) -> int:
 
 class ICEIndex:
     def __init__(self, orders: Sequence[int] = DEFAULT_ORDERS, eos_id: Optional[int] = None, vocab_size: int = 32000,
-                 cand: str = ""):
+                 cand: str = "", v2: bool = False):
         self.orders = tuple(orders)
         self.cand = cand
+        self.v2 = bool(cand) and v2
         self.K = n_slots(cand, len(self.orders)) if cand else 0
         self.alpha = get_alpha_mask() if cand == "vr" else None
         # VR: previous occurrence (same document) of the order-n key ending at each position, -1 none
@@ -151,13 +155,14 @@ class ICEIndex:
     def _candidates(self, t, lasts, seconds, length, dist, best) -> Dict[str, List[int]]:
         """ICE-V / VR slots of position t, in the order of ice_features._candidates."""
         x = self.tokens
-        tok, ln, db = [], [], []
+        tok, ln, db, src = [], [], [], []
 
         def occ(p, key=t, n=None):        # candidate x[p+1] of an occurrence p of the key ending at `key`
             if p < 0:
-                tok.append(-1), ln.append(0), db.append(0)
+                tok.append(-1), ln.append(0), db.append(0), src.append(-1)
             else:
                 tok.append(x[p + 1]), ln.append(self._match(key, p) if n is None else n), db.append(_dist_b(key - p))
+                src.append(p + 1)
 
         for j in range(self.N):
             occ(lasts[j], n=length[j])
@@ -176,15 +181,42 @@ class ICEIndex:
                     m = self._match(a, q) if q >= 0 else 0
                     for i in range(1, SPAN + 1):
                         if q >= 0 and q + i <= t:           # q + i > t would be the label (or later)
-                            tok.append(x[q + i]), ln.append(m), db.append(_dist_b(a - q))
+                            tok.append(x[q + i]), ln.append(m), db.append(_dist_b(a - q)), src.append(q + i)
                         else:
-                            tok.append(-1), ln.append(0), db.append(0)
-        return dict(ice_v_tok=tok, ice_v_len=ln, ice_v_dist=db)
+                            tok.append(-1), ln.append(0), db.append(0), src.append(-1)
+        out = dict(ice_v_tok=tok, ice_v_len=ln, ice_v_dist=db)
+        if self.v2:
+            out[SRC_KEY] = src
+            out.update(self._v2_features(tok, ln, src))
+        return out
+
+    def _v2_features(self, tok, ln, src) -> Dict[str, List[int]]:
+        """ICE-V2 slot features of one position (ice_features.v2_features), O(K) per step."""
+        n_occ = n_occ_slots(self.cand, self.N)
+        cnt, newest, best = {}, {}, {}           # per distinct token: #slots, max source, best occurrence len
+        for k, (c, n, i) in enumerate(zip(tok, ln, src)):
+            if c < 0:
+                continue
+            cnt[c] = cnt.get(c, 0) + 1
+            newest[c] = max(newest.get(c, -1), i)
+            if k < n_occ:
+                best[c] = max(best.get(c, -1), n)
+        rank = {c: r for r, c in enumerate(sorted(newest, key=newest.get, reverse=True))}
+        top2 = sorted(best.items(), key=lambda kv: -kv[1])[:2]     # the best competitor is one of these
+        delta, n_k, rec = [], [], []
+        for c, n in zip(tok, ln):
+            if c < 0:
+                delta.append(0), n_k.append(0), rec.append(0)
+                continue
+            comp = next((v for cc, v in top2 if cc != c), None)
+            delta.append(DELTA_NONE if comp is None else DELTA_OFF + min(max(n - comp, -DELTA_CLIP), DELTA_CLIP))
+            n_k.append(min(cnt[c], CNT_MAX)), rec.append(min(rank[c], REC_MAX))
+        return dict(ice_v_delta=delta, ice_v_cnt=n_k, ice_v_rec=rec)
 
     def extend(self, tokens: Sequence[int]) -> Dict[str, np.ndarray]:
         """Feed several tokens; returns features stacked like compute_ice_features ([N,T] and [T])."""
         feats = [self.step(t) for t in tokens]
-        keys_k = V_KEYS if self.cand else ()
+        keys_k = (V_KEYS + ((SRC_KEY,) + V2_KEYS if self.v2 else ())) if self.cand else ()
         if not feats:
             return {**{k: np.zeros((self.N, 0), dtype=np.int64) for k in FEATURE_KEYS_N},
                     **{k: np.zeros((self.K, 0), dtype=np.int64) for k in keys_k},
@@ -204,7 +236,7 @@ class ICEIndex:
         if T == 0:
             return self.extend([])
         seg = segments_from_eos(x, self.eos)
-        f = compute_ice_features(x, seg, self.orders, self.cand)
+        f = compute_ice_features(x, seg, self.orders, self.cand, self.v2)
         xl = x.tolist()
         self.tokens.extend(xl)
         s0 = int(np.searchsorted(seg, seg[-1]))              # start of the current (last) document
@@ -252,14 +284,14 @@ class ICEIndex:
 
 def features_to_tensors(feats: List[Dict[str, np.ndarray]], device) -> Dict[str, torch.Tensor]:
     """Batch the per-row features of a chunk ([N,T] / [T] arrays) into model inputs [B,N,T] / [B,T]."""
-    keys = [k for k in FEATURE_KEYS_N + V_KEYS + FEATURE_KEYS_1 if k in feats[0]]
+    keys = [k for k in FEATURE_KEYS_N + V_KEYS + V2_KEYS + FEATURE_KEYS_1 if k in feats[0]]
     return {k: torch.from_numpy(np.stack([np.asarray(f[k], dtype=np.int64) for f in feats])).to(device)
             for k in keys}
 
 
 def step_features_to_tensors(feats: List[Dict[str, object]], device) -> Dict[str, torch.Tensor]:
     """Batch single-position features (ICEIndex.step outputs) into [B,N,1] / [B,1] tensors."""
-    out = {k: torch.tensor([f[k] for f in feats], dtype=torch.long)[:, :, None] for k in FEATURE_KEYS_N + V_KEYS
-           if k in feats[0]}
+    out = {k: torch.tensor([f[k] for f in feats], dtype=torch.long)[:, :, None]
+           for k in FEATURE_KEYS_N + V_KEYS + V2_KEYS if k in feats[0]}
     out.update({k: torch.tensor([f[k] for f in feats], dtype=torch.long)[:, None] for k in FEATURE_KEYS_1})
     return {k: v.to(device) for k, v in out.items()}

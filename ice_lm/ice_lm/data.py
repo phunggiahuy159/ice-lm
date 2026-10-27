@@ -16,7 +16,7 @@ import numpy as np
 import torch
 from torch.utils.data import IterableDataset
 
-from .ice_features import V_KEYS, compute_ice_features, get_alpha_mask, segments_from_eos, set_alpha_mask
+from .ice_features import V2_KEYS, V_KEYS, compute_ice_features, get_alpha_mask, segments_from_eos, set_alpha_mask
 
 PROSE_DEFAULT = dict(path="HuggingFaceFW/fineweb-edu", name="sample-10BT", field="text")
 CODE_DEFAULT = dict(path="codeparrot/codeparrot-clean", name=None, field="content")
@@ -199,9 +199,10 @@ ICE_KEYS = ("ice_succ", "ice_len", "ice_dist", "ice_agree", "ice_rel",
 EVAL_KEYS = ("ice_match_len", "ice_dist_star", "lookup_s_star")
 
 
-def model_ice_keys(cand: str = "") -> tuple:
-    """Feature keys an ICE model reads: ICE_KEYS, + the candidate slots V_KEYS for ICE-V / VR (cfg.ice_v)."""
-    return ICE_KEYS + (V_KEYS if cand else ())
+def model_ice_keys(cand: str = "", v2: bool = False) -> tuple:
+    """Feature keys an ICE model reads: ICE_KEYS, + the candidate slots V_KEYS for ICE-V / VR (cfg.ice_v), + the
+    ICE-V2 slot features V2_KEYS (cfg.ice_v2)."""
+    return ICE_KEYS + (V_KEYS + (V2_KEYS if v2 else ()) if cand else ())
 
 
 def alpha_mask_from_tokenizer(tok, vocab_size: int) -> np.ndarray:
@@ -227,18 +228,19 @@ def alpha_mask_for_data(data_dir: str) -> np.ndarray:
 
 
 def make_example(window: np.ndarray, eos_id: Optional[int], orders, with_ice: bool,
-                 cand: str = "") -> Dict[str, torch.Tensor]:
-    """window: seq_len + 1 tokens -> input_ids, labels (+ ICE features for the inputs; cand: ICE-V / VR slots)."""
+                 cand: str = "", v2: bool = False) -> Dict[str, torch.Tensor]:
+    """window: seq_len + 1 tokens -> input_ids, labels (+ ICE features for the inputs; cand: ICE-V / VR slots,
+    v2: + the ICE-V2 slot features)."""
     w = window.astype(np.int64)
     x, y = w[:-1], w[1:]
     ex = dict(input_ids=torch.from_numpy(x), labels=torch.from_numpy(y))
-    feats = compute_ice_features(x, segments_from_eos(x, eos_id), orders, cand if with_ice else "")
+    feats = compute_ice_features(x, segments_from_eos(x, eos_id), orders, cand if with_ice else "", v2)
     feats["lookup_s_star"] = feats["ice_s_star"]
     # lookup statistics are always returned (eval splits: copyable / lookup right / lookup misleading)
     for k in EVAL_KEYS:
         ex[k] = torch.from_numpy(feats[k])
     if with_ice:
-        for k in model_ice_keys(cand):
+        for k in model_ice_keys(cand, v2):
             ex[k] = torch.from_numpy(feats[k])
     return ex
 
@@ -255,9 +257,9 @@ class TrainWindows(IterableDataset):
 
     def __init__(self, data_dir: str, seq_len: int, orders, with_ice: bool, ice_dropout: float,
                  seed: int, rank: int = 0, world: int = 1, start_index: int = 0, micro_batch: int = 1,
-                 cand: str = ""):
+                 cand: str = "", v2: bool = False):
         self.data_dir, self.seq_len, self.orders = data_dir, seq_len, tuple(orders)
-        self.with_ice, self.ice_dropout, self.cand = with_ice, ice_dropout, cand
+        self.with_ice, self.ice_dropout, self.cand, self.v2 = with_ice, ice_dropout, cand, v2
         # ICE-VR: the anchor mask must be set in this process; carried to the DataLoader workers explicitly
         self.alpha = get_alpha_mask() if (with_ice and cand == "vr") else None
         self.seed, self.rank, self.world, self.start_index = seed, rank, world, start_index
@@ -275,7 +277,8 @@ class TrainWindows(IterableDataset):
             cache.update(epoch=epoch, perm=prng.permutation(n_win),
                          shift=0 if epoch == 0 else int(prng.integers(0, L)))
         off = int(cache["perm"][k]) * L + cache["shift"]
-        ex = make_example(np.asarray(data[off: off + L + 1]), self.eos, self.orders, self.with_ice, self.cand)
+        ex = make_example(np.asarray(data[off: off + L + 1]), self.eos, self.orders, self.with_ice, self.cand,
+                          self.v2)
         ex["ice_keep"] = torch.tensor(float(np.random.default_rng([self.seed, i]).random() >= self.ice_dropout))
         return ex
 
@@ -295,7 +298,7 @@ class TrainWindows(IterableDataset):
 
 
 def val_batches(data_dir: str, split: str, seq_len: int, batch_size: int, n_batches: Optional[int],
-                orders, with_ice: bool, cand: str = ""):
+                orders, with_ice: bool, cand: str = "", v2: bool = False):
     """Sequential non-overlapping windows from a validation file."""
     data = open_tokens(data_dir, split)
     eos = load_meta(data_dir)["eos_id"]
@@ -305,7 +308,7 @@ def val_batches(data_dir: str, split: str, seq_len: int, batch_size: int, n_batc
     batch = []
     for j in range(n_windows):
         w = np.asarray(data[j * seq_len: j * seq_len + seq_len + 1])
-        ex = make_example(w, eos, orders, with_ice, cand)
+        ex = make_example(w, eos, orders, with_ice, cand, v2)
         ex["ice_keep"] = torch.tensor(1.0)
         batch.append(ex)
         if len(batch) == batch_size:
@@ -328,6 +331,6 @@ def split_batch(batch: Dict[str, torch.Tensor], device, with_stats: bool = False
     """-> input_ids, labels, ice dict (or None), ice_keep, match_len (all on device)
     (+ dict of lookup statistics for the eval splits when with_stats)."""
     b = {k: v.to(device, non_blocking=True) for k, v in batch.items()}
-    ice = {k: b[k] for k in ICE_KEYS + V_KEYS if k in b} if "ice_succ" in b else None
+    ice = {k: b[k] for k in ICE_KEYS + V_KEYS + V2_KEYS if k in b} if "ice_succ" in b else None
     out = (b["input_ids"], b["labels"], ice, b.get("ice_keep"), b.get("ice_match_len"))
     return out + ({k: b[k] for k in EVAL_KEYS if k in b},) if with_stats else out

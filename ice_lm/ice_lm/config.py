@@ -11,10 +11,13 @@ Arms follow the proposal (proposal_ice/proposal.tex, Section 2.2):
     C_in / C_out / C_nodrop / C_notrust      ablations of C
     B_pm                                     B with as many parameters as C (capacity control)
     G / G_C                                  no attention (pure GDN, zero KV cache) without / with ICE
+    G_MQA                                    15 GDN + 1 one-KV-head attention layer (equal-bytes baseline)
     G_V / G_VR                               G + ICE-V / ICE-VR: a lookup-blind backbone scores the lookup's
                                              candidates (log-space pointer-sentinel, see model.ICEPointer)
     G_V_in / G_V_nover                       G_V + input-side ICE / G_V without the backbone-logprob terms
     C_V / C_VR                               the same at 7:1
+    G_VR2                                    G_VR with the ICE-V2 scorer (relative slot features, gamma >= 0, no
+                                             beta) + the listwise slot loss (research/round2/decision2.md section 2)
 """
 from __future__ import annotations
 
@@ -60,6 +63,9 @@ class ModelConfig:
     ice_v_input: bool = False    # also inject the input-side ICE (ICEInput) into the backbone
     ice_v_verify: bool = True    # backbone log-prob terms in the slot / sentinel scores (gamma, beta)
     ice_v_aux: float = 0.5       # weight of the auxiliary CE of the backbone logits
+    ice_v2: bool = False         # ICE-V2 scorer (model.ICEPointer): + R/A/N/Q slot-feature tables, softplus gamma, no beta
+    ice_v2_feats: str = "dnrq"   # V2 tables used: d = match margin, n = agreement count, r = recency rank, q = l rank
+    ice_v_listwise: float = 0.0  # weight of the listwise slot CE (0 = off)
 
 
 @dataclass
@@ -133,6 +139,9 @@ ARMS = {
     # no attention at all (zero KV cache): can the lookup stand in for attention?
     "G": dict(layout="gdn", ice=False),
     "G_C": dict(layout="gdn", ice=True),
+    # equal-bytes attention baseline: 15 GDN + 1 full-attention layer with ONE KV head (256 B/token at every length,
+    # 4x the ICE-VR table) -- also the missing 15:1 arm without ICE
+    "G_MQA": dict(layout="layer", ratio=15, ice=False, n_kv_heads=1),
     # ablations of C
     "C_in": dict(layout="layer", ratio=7, ice=True, ice_output=False),
     "C_out": dict(layout="layer", ratio=7, ice=True, ice_input=False),
@@ -148,12 +157,15 @@ ARMS = {
     "G_V_nover": dict(layout="gdn", ice=True, ice_v="v", ice_v_verify=False, _ice_dropout=0.0),
     "C_V": dict(layout="layer", ratio=7, ice=True, ice_v="v", _ice_dropout=0.0),
     "C_VR": dict(layout="layer", ratio=7, ice=True, ice_v="vr", _ice_dropout=0.0),
+    # ICE-V2, trained jointly (G_VR's gradient paths: p_bb(y) and h attached, aux CE 0.5) + the listwise term
+    "G_VR2": dict(layout="gdn", ice=True, ice_v="vr", ice_v2=True, ice_v_listwise=0.25, _ice_dropout=0.0),
 }
 
 
 def ice_param_count(m: ModelConfig) -> int:
     """Parameters ICE adds to a model (input module with trust embeddings + output module, or the ICE-V pointer)."""
-    from .ice_features import MAX_MATCH, N_AGREE_BUCKETS, N_DIST_BUCKETS, N_LEN_BUCKETS, N_REL_BUCKETS, n_slots
+    from .ice_features import (CNT_MAX, MAX_MATCH, N_AGREE_BUCKETS, N_DELTA, N_DIST_BUCKETS, N_LEN_BUCKETS,
+                               N_REL_BUCKETS, REC_MAX, slot_groups, n_slots)
     d, n = m.d_model, len(m.ice_orders)
     p_in = n * d * d + (N_LEN_BUCKETS + N_DIST_BUCKETS) * d + 2 * d
     p_out = d + d + N_LEN_BUCKETS
@@ -164,6 +176,10 @@ def ice_param_count(m: ModelConfig) -> int:
         k = n_slots(m.ice_v, n)
         # norm + w (sentinel), b[src], L[src, len], D[dist], c0 (+ gamma[src], beta)
         p_ptr = 2 * d + k + k * (MAX_MATCH + 1) + N_DIST_BUCKETS + 1 + ((k + 1) if m.ice_v_verify else 0)
+        if m.ice_v2:   # no beta; per-group tables R / A / N / Q (model.V2_TABLES)
+            nb = dict(d=N_DELTA, n=CNT_MAX + 1, r=REC_MAX + 1, q=3)
+            p_ptr += (max(slot_groups(m.ice_v, n)) + 1) * sum(nb[f] for f in set(m.ice_v2_feats)) \
+                - (1 if m.ice_v_verify else 0)
         return (p_in if m.ice_v_input else 0) + p_ptr
     return (p_in if m.ice_input else 0) + (p_out if m.ice_output else 0)
 

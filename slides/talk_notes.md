@@ -37,7 +37,7 @@ Slides: `slides/ice_gstar.html`. Open it in a browser and use ← → to switch 
 1. **The headline result is solid.**
    * Recurrent + ICE (G_VR) beats the 7:1 hybrid by 0.040 / 0.045 on code over two seeds, with a seed spread of about 0.004.
    * It also beats the hybrid on prose (−0.060).
-   * The comparison is fair: same data, same token budget, same parameter count (about 148M vs 140M).
+   * The comparison is fair: same data, same token budget, almost the same parameter count (148M vs 145M).
 2. **Where the gain comes from: copying from far back.**
    * On tokens that repeat something more than 512 tokens back, G_VR scores 0.933 vs the hybrid's 1.132 and
      recurrent-only's 1.680.

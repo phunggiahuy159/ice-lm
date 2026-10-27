@@ -159,7 +159,7 @@ def main():
         set_alpha_mask(alpha_mask_for_data(tcfg.data_dir))          # identifier anchors (training + eval)
     ds = TrainWindows(tcfg.data_dir, tcfg.seq_len, mcfg.ice_orders, with_ice, tcfg.ice_dropout, tcfg.seed,
                       rank, world, start_index=state.get("samples", state["step"] * tokens_per_step // tcfg.seq_len),
-                      micro_batch=tcfg.micro_batch, cand=mcfg.ice_v)
+                      micro_batch=tcfg.micro_batch, cand=mcfg.ice_v, v2=mcfg.ice_v2)
     loader = DataLoader(ds, batch_size=tcfg.micro_batch, collate_fn=collate, num_workers=tcfg.num_workers,
                         pin_memory=device.type == "cuda", persistent_workers=tcfg.num_workers > 0,
                         prefetch_factor=4 if tcfg.num_workers > 0 else None)
