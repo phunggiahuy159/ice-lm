@@ -87,8 +87,16 @@ Pre-registered predictions (`research/decision.md`):
 | follow wrong lookup | 0.239 | 0.236 | 0.340 | 0.342 | +0.10 | +0.11 |
 | prose, all | 3.384 | 3.383 | 3.324 | 3.323 | −0.060 | −0.061 |
 
-Seed-to-seed spread ≈ 0.004 on code loss, so the G_VR − B gap (−0.040 / −0.045) is ~10σ. By the pre-registered rule
-(research/round2/decision2.md, F0) this counts as "beats B (2 seeds)", and seed 3 is not needed. CodeRecall is
+Code loss differs by ≤ 0.005 between seeds, and the G_VR − B gap is −0.040 / −0.045. That is "beats B in both
+seeds" by the pre-registered rule (research/round2/decision2.md, F0), so seed 3 is not needed. Two seeds do not give
+a σ.
+- ICE-off differs more between seeds: reliance is 0.14–0.17.
+- **The lead shrinks during training:** −0.117 / −0.058 / −0.039 at 131M / 164M / 197M tokens (8-window evals). The
+  LR anneals, so this cannot be extrapolated; see research/round3/decision3.md, M2.
+
+**Where attention's gain lies** (exact split by lookup bucket; the buckets are the same tokens for every arm):
+- 88% of B − G on code (90% on prose) falls on tokens the lookup predicts right.
+- Ordinary training (G's own gain over training) puts only 45% there. CodeRecall is
 noisier across seeds (e.g. G_VR conflict_g1 0.31 vs 0.18; override_same 0.42 vs 0.56).
 
 Caveats (seed 1 section above): 200M tokens; 140M parameters.

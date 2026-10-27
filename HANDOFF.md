@@ -27,6 +27,37 @@ Runs, models and data live on Modal (see "Infrastructure"); this repo holds code
      Notes: `research/round2/impl_v2_notes.md`.
   4. Remaining budget for this round: ≈ $29.
 
+### Round 3 (27 Oct, ~13:00): what improved, what is still weak
+**Improved (all on CPU or free; Modal is blocked by its spend limit until 1 Nov):**
+- **Honest cost:** the measured H100 benchmark is in the repo (`results_t200/benchmark_t200.*`).
+  - The compact index was built for real: 82–90 B/token (`research/round3/index_memory.json`).
+  - Memory per sequence: 2.8× less than B at 4K, where quality is measured; 11× at 32K.
+- **The insight:** 88% of what attention adds to a recurrent model sits on tokens an exact lookup already predicts
+  (45% null).
+- **Conflicts understood:** where the lookup's best guess is wrong, the backbone's own probability ranks the right
+  candidate first 0.645 vs the verifier's 0.406 (fresh windows, pre-registered). The fix is a context-dependent mix:
+  V2, run 2 on Kaggle.
+- **Realistic code use case** (`scripts/stale_edit.py`): with an old version of a file in context, ICE predicts the
+  unchanged code much better than B (0.39 vs 0.89), but copies the old name at changed places 65% vs 13%.
+- **Synthetic recall artefact found:** B's 0 was rare tokens; on real text B repeats about 60% vs G_VR 97%.
+- **Fit leakage fixed:** `fit_scorer --unseen`.
+- **WSD + decay branches** in `train.py`, for the 3× longer runs. The cosine default is unchanged, and a branch
+  matches a standalone run bit for bit.
+- **Slides/notes** follow decision3: every claim is supported, and the shrinking lead is disclosed.
+
+**Still weak / open:**
+1. The G_VR − B lead shrinks with training (−0.117 → −0.039). The 600M WSD runs decide it (decision3 M2, about $23
+   on Modal after 1 Nov).
+2. There is no equal-memory attention baseline yet (G_MQA, M1, about $3.5).
+3. Conflicts and stale values are unsolved: ICE copies the old occurrence.
+4. The frozen-backbone fits (over-reliance answer), V2, line completion and the T4 re-evaluation are waiting for
+   the user's Kaggle run (`ice_lm/notebooks/ice_eval_kaggle.ipynb`, decision3 §3).
+5. Only 140M, 200M tokens, one tokenizer. The real pretrained model (Mamba2 vs Pythia) moves to the next round.
+
+**Next session:** fetch `kaggle_results/latest` from the Modal volume (or the zip the user downloads) and check
+SUMMARY.md against decision3 §3. After 1 Nov, run M1 + M2 on Modal (profile run3; `train.py --schedule wsd
+--branch_tokens 2e8,4e8`, then branch runs with `--branch_from`).
+
 ### Update (27 Oct, ~10:30)
 * **ICE-V2 is implemented** (commit 34de81d): 169 tests pass on local CPU, and the old arms are bit-identical.
   Notes: `research/round2/impl_v2_notes.md`.
