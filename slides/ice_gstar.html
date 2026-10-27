@@ -52,9 +52,9 @@
            display: flex; flex-direction: column; gap: 6px; }
   .board table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
   .board th { font-size: 21px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--muted);
-              text-align: left; white-space: nowrap; padding: 0 12px 14px 0; border-bottom: 1px solid var(--line); }
+              text-align: left; white-space: nowrap; padding: 0 12px 10px 0; border-bottom: 1px solid var(--line); }
   .board th.n, .board td.n { text-align: right; }
-  .board td { font-size: 28px; padding: 14px 12px 14px 0; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  .board td { font-size: 28px; padding: 10px 12px 10px 0; border-bottom: 1px solid var(--line); vertical-align: middle; }
   .board tr:last-child td { border-bottom: none; }
   .board td .sub { display: block; font-size: 21px; color: var(--muted); margin-top: 2px; }
   .board tr.win td { color: var(--blue); }
@@ -66,17 +66,20 @@
   .mem .v { font-size: 25px; white-space: nowrap; }
   .board .cap { font-size: 21px; color: var(--muted); margin-top: 10px; line-height: 1.4; }
   .board .cap b { color: var(--ink); }
+  .board .key { font-size: 25px; margin-top: 8px; color: var(--ink); }
+  .board .key b { color: var(--blue); }
   .tiles { display: flex; gap: 24px; }
-  .tile { flex: 1; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px 26px;
-          display: flex; align-items: center; gap: 22px; }
+  .tile { flex: 1; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px 24px;
+          display: flex; align-items: center; gap: 20px; }
   .tile .big { font-family: var(--serif); font-size: 46px; font-weight: 600; color: var(--blue); line-height: 1; white-space: nowrap; }
   .tile .t { font-size: 26px; font-weight: 600; line-height: 1.25; }
-  .tile .d { font-size: 22px; line-height: 1.35; color: var(--ink-2); margin-top: 4px; }
-  .limits { background: var(--orange-soft); border-left: 6px solid var(--orange); border-radius: 12px; padding: 24px 32px;
+  .tile .d { font-size: 20px; line-height: 1.32; color: var(--ink-2); margin-top: 4px; }
+  .limits { background: var(--orange-soft); border-left: 6px solid var(--orange); border-radius: 12px; padding: 18px 30px;
             display: flex; gap: 48px; }
   .limits .col { flex: 1; }
-  .limits h3 { font-size: 26px; font-weight: 600; color: var(--orange); margin-bottom: 8px; letter-spacing: 1px; text-transform: uppercase; }
-  .limits p { font-size: 25px; line-height: 1.4; }
+  .limits .col:first-child { flex: 1.9; }
+  .limits h3 { font-size: 24px; font-weight: 600; color: var(--orange); margin-bottom: 8px; letter-spacing: 1px; text-transform: uppercase; }
+  .limits p { font-size: 23px; line-height: 1.38; }
   .limits .next h3 { color: var(--ink); }
 
   .hint { position: fixed; right: 16px; bottom: 12px; font: 13px var(--sans); color: #8A93A3; }
@@ -116,7 +119,7 @@
     <div class="step hi">
       <span class="tag">3 · Verifier (new)</span>
       <h3>The model checks each candidate against its own guess</h3>
-      <p>A wrong candidate can be ignored. Only 2.7K parameters.</p>
+      <p>A wrong candidate is down-weighted, not ignored. Only 2.7K parameters.</p>
     </div>
     <div class="arrow"></div>
     <div class="step">
@@ -131,17 +134,17 @@
   <div class="review">
     <div class="r"><p class="q">Reviewers asked</p><p class="a"><b>Misleading lookups?</b><br>Measured loss where the lookup is wrong</p></div>
     <div class="r"><p class="q">Reviewers asked</p><p class="a"><b>Over-reliance?</b><br>Same model with ICE switched off</p></div>
-    <div class="r"><p class="q">Reviewers asked</p><p class="a"><b>Real cost?</b><br>Memory and decode speed on H100</p></div>
+    <div class="r"><p class="q">Reviewers asked</p><p class="a"><b>Real cost?</b><br>Total memory, lookup table included, and decode speed (H100)</p></div>
     <div class="r"><p class="q">Reviewers asked</p><p class="a"><b>Code use case?</b><br>CodeRecall benchmark + held-out code</p></div>
   </div>
 
-  <p class="foot">140M parameters · 200M training tokens · Modal H100 · TinyLlama tokenizer</p>
+  <p class="foot">140M parameters · 200M training tokens (short: 1.4 per parameter) · Modal H100 · TinyLlama tokenizer</p>
   <p class="num">1 / 2</p>
 </section>
 
 <!-- ============ Slide 2: results ============ -->
-<section class="slide" style="background:var(--bg2);gap:26px">
-  <h2 style="font-size:52px">Without attention, ICE beats the hybrid with 12× less memory</h2>
+<section class="slide" style="background:var(--bg2);gap:18px;padding-top:56px">
+  <h2 style="font-size:46px">Without attention, ICE beats the hybrid at equal training, with a third of its memory</h2>
 
   <div class="board">
     <table>
@@ -161,26 +164,27 @@
     </table>
     <p class="cap">Held-out, 500 × 4K-token windows · loss in nats, lower is better · top-1 = next token exactly right ·
       perplexity vs the hybrid: <b>−4% code</b> (5.64 → 5.42), <b>−6% text</b> (29.5 → 27.8)</p>
+    <p class="key">On code, <b>88%</b> of what attention adds to the recurrent model is on tokens the lookup already predicts.</p>
   </div>
 
   <div class="tiles">
-    <div class="tile"><span class="big">12×</span>
-      <div><p class="t">less memory per sequence</p><p class="d">5.5 vs 66.8 MiB at 32K tokens. Decoding 9% slower (Python index).</p></div></div>
+    <div class="tile"><span class="big">2.9×</span>
+      <div><p class="t">less memory at 4K tokens</p><p class="d">3.7 vs 10.8 MiB per sequence, where quality is measured. Grows 65 vs 2,048 B per token (12× less at 32K). Decoding 9% slower (Python index).</p></div></div>
     <div class="tile"><span class="big">2 seeds</span>
-      <div><p class="t">same win both times</p><p class="d">Code loss −0.040 / −0.045 vs the hybrid; noise ≈ 0.004.</p></div></div>
+      <div><p class="t">same win, but shrinking</p><p class="d">Code −0.040 / −0.045. The lead fell from 0.12 to 0.04 over the last third of training; a 3× longer run is next.</p></div></div>
     <div class="tile"><span class="big">0.19 → 0</span>
-      <div><p class="t">loss harm from wrong lookups</p><p class="d">Old ICE vs new, on tokens where the lookup is wrong.</p></div></div>
+      <div><p class="t">loss harm from wrong lookups</p><p class="d">Old ICE vs new, against no lookup. The hybrid is still 0.04 better on these tokens.</p></div></div>
   </div>
 
   <div class="limits">
     <div class="col">
       <h3>Still weak</h3>
-      <p><b>Conflicts</b> (an updated variable, two similar objects): no better than the hybrid.
-        <b>Wrong lookups:</b> top-1 34.6% vs 37.7%. <b>ICE off:</b> 0.14 worse than recurrent-only.</p>
+      <p><b>Conflicts</b> (an updated variable, two similar objects): the hybrid guesses at chance, and ICE does worse because it
+        confidently copies the wrong occurrence. It follows a wrong lookup 34% of the time (hybrid 24%). <b>ICE off:</b> 0.14 worse than recurrent-only.</p>
     </div>
     <div class="col next">
       <h3>Next</h3>
-      <p>Same-memory attention baseline · ICE-V2 (compares candidates) · line-completion exact match · Mamba2-370M vs Pythia-410M.</p>
+      <p>3× longer training · same-memory attention layer · line-completion exact match · a real pretrained model.</p>
     </div>
   </div>
 
