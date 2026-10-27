@@ -51,7 +51,7 @@ it runs in the background (up to 12 h) and keeps the outputs. Expect roughly 8-1
 order, and no new job starts after `MAX_HOURS`.
 
 **Inputs (pick one):**
-* **Modal (default):** in the notebook editor, *Add-ons → Secrets → Add a new secret*: label `MODAL_TOKEN_ID`,
+* **Modal (default):** paste the token into cell 0 (simplest), or, in the notebook editor, *Add-ons → Secrets → Add a new secret*: label `MODAL_TOKEN_ID`,
   then `MODAL_TOKEN_SECRET` (workspace tien-phat140205). **Tick the checkbox next to each secret** so it is attached
   to *this* notebook (a secret that exists but is not attached gives "No user secrets exist for kernel id ..."). The notebook downloads the checkpoints and data from the
   `ice-lm` volume (read only; size- and CRC-checked) and uploads its results to `kaggle_results/latest` on that
@@ -61,6 +61,18 @@ order, and no new job starts after `MAX_HOURS`.
   The notebook finds it under `/kaggle/input` (set `SOURCE = "dataset"`).
 
 **Outputs:** `/kaggle/working/ice_results/` (one JSON per job, `logs/`, `SUMMARY.md`) and `ice_results.zip`.
+""")
+
+md("## 0. Modal token (optional)")
+code("""
+# Instead of Kaggle secrets: paste your Modal token here (workspace tien-phat140205; in ~/.modal.toml, or
+# modal.com -> Settings -> API tokens). Keep the notebook PRIVATE, and blank these before sharing it or committing it.
+MODAL_TOKEN_ID     = ""   # "ak-..."
+MODAL_TOKEN_SECRET = ""   # "as-..."
+import os
+if MODAL_TOKEN_ID and MODAL_TOKEN_SECRET:
+    os.environ["MODAL_TOKEN_ID"], os.environ["MODAL_TOKEN_SECRET"] = MODAL_TOKEN_ID.strip(), MODAL_TOKEN_SECRET.strip()
+    print("Modal token from this cell:", MODAL_TOKEN_ID.strip()[:5] + "...")
 """)
 
 md("## 1. Config")
