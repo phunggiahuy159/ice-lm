@@ -1,0 +1,45 @@
+{
+ "results": {
+  "B": {
+   "unchanged/loss": 0.8936473496813876,
+   "changed/loss": 2.5196257667769335,
+   "changed_first/loss": 3.784866606900436,
+   "alone_unchanged/loss": 1.6580880191372673,
+   "alone_changed/loss": 2.6388155433983655,
+   "unchanged/acc": 0.7996551643247555,
+   "changed/acc": 0.5707608413399117,
+   "changed_first/acc": 0.3816114681166584,
+   "alone_unchanged/acc": 0.6660677798914958,
+   "alone_changed/acc": 0.5510257076084134,
+   "unchanged/n": 85258,
+   "changed/n": 3851,
+   "changed_first/n": 2023,
+   "alone_unchanged/n": 85158,
+   "alone_changed/n": 3851,
+   "follow_stale": 0.13254203758654798,
+   "follow_stale_n": 2022
+  },
+  "G_VR": {
+   "unchanged/loss": 0.3906956797747467,
+   "changed/loss": 2.715644899822464,
+   "changed_first/loss": 4.245334800610847,
+   "alone_unchanged/loss": 1.629065785138911,
+   "alone_changed/loss": 2.5871049604363887,
+   "unchanged/acc": 0.9205587745431514,
+   "changed/acc": 0.4863671773565308,
+   "changed_first/acc": 0.21601581809194265,
+   "alone_unchanged/acc": 0.6704126447309706,
+   "alone_changed/acc": 0.5538821085432355,
+   "unchanged/n": 85258,
+   "changed/n": 3851,
+   "changed_first/n": 2023,
+   "alone_unchanged/n": 85158,
+   "alone_changed/n": 3851,
+   "follow_stale": 0.6493570722057369,
+   "follow_stale_n": 2022
+  }
+ },
+ "n_files": 100,
+ "frac": 0.1,
+ "seed": 0
+}

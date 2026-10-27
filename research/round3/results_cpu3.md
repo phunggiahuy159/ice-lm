@@ -34,3 +34,20 @@ Positions where the lookup's top guess s\* is wrong and the answer is among the 
 - So a context-dependent mix of the two should beat both. This is the question for V2's backbone-rank feature q
   and its softplus γ (Kaggle run 2).
 - The 40-window numbers from the first probe (0.401 / 0.645) replicate.
+
+## §4.5 Stale-version edit test (`scripts/stale_edit.py`, `stale_edit.json`, 100 held-out code files)
+- **Setup:** v1 is the file with 10% of its distinct identifiers renamed (a prefix such as `old_`) and 10% of its
+  numbers changed (first digit); v2 is the original. The model reads v1 + v2; v2 is scored.
+
+| v2 tokens | B loss / top-1 | G_VR loss / top-1 |
+|---|---|---|
+| unchanged (85,258) | 0.894 / 0.800 | **0.391 / 0.921** |
+| changed (3,851) | 2.520 / 0.571 | 2.716 / 0.486 |
+| first token of a changed span | 3.785 / 0.382 | 4.245 / 0.216 |
+| predicts exactly the stale v1 token there | 0.133 | **0.649** |
+| control: v2 alone, unchanged / changed | 1.658 / 2.639 | 1.629 / 2.587 |
+
+- **Pre-registered: unchanged G_VR < B by ≥ 0.10.** Result −0.503 ✓.
+- **Pre-registered: changed ≤ B + 0.20.** Result +0.196 ✓, just under the limit.
+- The secondary first-token metrics are not pre-registered. There, ICE copies the stale name 65% of the time vs 13%
+  for B. That is the conflict weakness on a realistic code workload, and the slide states it.

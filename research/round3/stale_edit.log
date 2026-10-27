@@ -1,0 +1,13 @@
+[stale] 100 files, 3851 changed and 85258 unchanged v2 tokens
+[stale] B: unchanged 0.894/0.800  changed 2.520/0.571  changed_first 3.785/0.382  alone_unchanged 1.658/0.666  alone_changed 2.639/0.551  follow_stale 0.133
+[stale] G_VR: unchanged 0.391/0.921  changed 2.716/0.486  changed_first 4.245/0.216  alone_unchanged 1.629/0.670  alone_changed 2.587/0.554  follow_stale 0.649
+
+loss / top-1 on v2 tokens (v1 in context unless 'alone')
+group                                  B              G_VR
+unchanged                    0.894/0.800       0.391/0.921
+changed                      2.520/0.571       2.716/0.486
+changed_first                3.785/0.382       4.245/0.216
+alone_unchanged              1.658/0.666       1.629/0.670
+alone_changed                2.639/0.551       2.587/0.554
+follow_stale                       0.133             0.649
+saved /Users/phunghuy/code/gstar/proposal_ice/research/round3/stale_edit.json

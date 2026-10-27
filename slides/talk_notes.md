@@ -32,7 +32,8 @@ print to PDF; each slide prints as one 1920×1080 page. Wording follows `researc
 >
 > On misleading lookups, the old version lost 0.19 nats where the lookup was wrong. The verifier brings that to zero.
 >
-> The weakness that remains is conflicts: when a variable was updated, it copies the outdated value. Next, I'll
+> The weakness that remains is conflicts. With an old version of a file in context, it predicts the unchanged code
+> far better than the hybrid, but where the file changed it copies the old name 65% of the time. Next, I'll
 > train 3× longer, compare against an attention layer with the same memory, and test on a real pretrained model.
 
 ## How to read the results
@@ -70,6 +71,13 @@ print to PDF; each slide prints as one 1920×1080 page. Wording follows `researc
    - The Python index used here takes 520–640 B/token. That is an implementation artefact, and still 3× below the
      hybrid's KV cache.
    - Decode at 32K: 78.4 vs 86.4 tok/s (H100, `results_t200/benchmark_t200.json`).
+
+7. **A realistic edit** (`scripts/stale_edit.py`, `research/round3/stale_edit.json`, 100 held-out files).
+   - Setup: an old version of the file (10% of names and numbers changed), then the current one.
+   - Unchanged code: loss 0.39 vs 0.89 for the hybrid, top-1 92% vs 80%.
+   - Changed code: 2.72 vs 2.52. At the first token of a changed name it predicts the old name 65% of the time
+     (hybrid 13%).
+   - Both pre-registered checks passed: unchanged ≥ 0.10 better, changed ≤ B + 0.20 (+0.196).
 
 ## Likely questions
 - **"Is the hybrid undertrained?"** "Possibly. It repeats real text verbatim only about 60% of the time. The 3×
