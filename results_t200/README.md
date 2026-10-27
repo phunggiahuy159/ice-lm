@@ -91,8 +91,21 @@ Seed-to-seed spread ≈ 0.004 on code loss, so the G_VR − B gap (−0.040 / �
 (research/round2/decision2.md, F0) this counts as "beats B (2 seeds)", and seed 3 is not needed. CodeRecall is
 noisier across seeds (e.g. G_VR conflict_g1 0.31 vs 0.18; override_same 0.42 vs 0.56).
 
-Caveats (seed 1 section above): 200M tokens; 140M parameters; the ICE table bytes are estimates (benchmark not yet run on the G
-arms).
+Caveats (seed 1 section above): 200M tokens; 140M parameters.
+
+## Cost, measured (H100, bf16, batch 1; `benchmark_t200.json`, `benchmark_t200.log`)
+| | B | G | G_VR |
+|---|---|---|---|
+| decode tok/s at 4K / 32K | 87.2 / 86.4 | 84.2 / 85.2 | 80.1 / 78.4 |
+| ICE CPU time per decode step | – | – | 346–360 µs (Python index) |
+| cache per sequence at 4K | 10.8 MiB | 3.2 MiB | 3.7 MiB (2.9× less than B) |
+| cache per sequence at 32K | 66.8 MiB | 3.2 MiB | 5.5 MiB (12× less) |
+| growth per token | 2,048 B (KV) | 0 | 64.7 B (table) |
+
+- The ICE table bytes are measured from the index's contents (distinct n-grams, tokens, chain pointers) under the
+  compact layout of `inference.ICEIndex.compact_bytes`. That layout is what a C/GPU index needs; it is not the
+  size of the Python dicts used here.
+- Quality is measured at 4K, where the memory saving is 2.9×. The 12× is at 32K.
 
 ## Synthetic recall: the hybrid's 0.00 is mostly an artefact (27 Oct, CPU check)
 `tables.txt` reports B at about 0 on repeat and MQAR. Those tasks draw tokens uniformly from about 31K vocabulary

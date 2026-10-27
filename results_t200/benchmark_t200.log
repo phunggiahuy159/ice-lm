@@ -1,0 +1,63 @@
+Note that running a local entrypoint in detached mode only keeps the last triggered Modal function alive after the parent process has been killed or disconnected.
+✓ Initialized. View run at 
+https://modal.com/apps/tien-phat140205/main/ap-ITL7a2VTUsUKntfiQWrsEb
+✓ Created objects.
+├── ✓ Uploaded /Users/phunghuy/code/gstar/proposal_ice/ice_lm/modal_app.py
+├── ✓ Uploaded /Users/phunghuy/code/gstar/proposal_ice/ice_lm/notebooks
+├── ✓ Uploaded /Users/phunghuy/code/gstar/proposal_ice/ice_lm/tests
+├── ✓ Uploaded /Users/phunghuy/code/gstar/proposal_ice/ice_lm/scripts
+├── ✓ Uploaded /Users/phunghuy/code/gstar/proposal_ice/ice_lm/ice_lm
+├── ✓ Created Function _tests.
+├── ✓ Created Function _tests_cpu.
+├── ✓ Created Function _smoke_cpu.
+├── ✓ Created Function _ddp_cpu.
+├── ✓ Created Function _notebook_cpu.
+├── ✓ Created Function _smoke.
+├── ✓ Created Function _prepare.
+├── ✓ Created Function _day0.
+├── ✓ Created Function _train.
+├── ✓ Created Function _evaluate.
+├── ✓ Created Function _evaluate_when_done.
+├── ✓ Created Function _cpu_cmd.
+└── ✓ Created Function _gpu_cmd.
++ python scripts/benchmark.py --runs /vol/runs/t200_B /vol/runs/t200_G /vol/runs/t200_G_C /vol/runs/t200_G_V /vol/runs/t200_G_VR --data_dir /vol/data --contexts 4096 16384 32768 --decode_steps 64 --out /vol/benchmark_t200.json
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[gdn] backend=auto -> fla (rel_err=6.30e-03, grads_ok=True, state_ok=True)
+
+### B: 144.9M params (276 MiB in torch.bfloat16), layout GGGGGGGAGGGGGGGA
+  T=  4096  prefill 0.05s (89,908 tok/s, ICE 0.00s)  decode 87.2 tok/s (11.5 ms/step, ICE 0 us)  KV 8.1 MiB  GDN 2.6 MiB  ICE 0.00 MiB  peak 380 MiB
+  T= 16384  prefill 0.13s (122,191 tok/s, ICE 0.00s)  decode 87.8 tok/s (11.4 ms/step, ICE 0 us)  KV 32.1 MiB  GDN 2.6 MiB  ICE 0.00 MiB  peak 565 MiB
+  T= 32768  prefill 0.24s (135,320 tok/s, ICE 0.00s)  decode 86.4 tok/s (11.6 ms/step, ICE 0 us)  KV 64.1 MiB  GDN 2.6 MiB  ICE 0.00 MiB  peak 843 MiB
+
+### G: 147.7M params (282 MiB in torch.bfloat16), layout GGGGGGGGGGGGGGGG
+  T=  4096  prefill 0.04s (98,807 tok/s, ICE 0.00s)  decode 84.2 tok/s (11.9 ms/step, ICE 0 us)  KV 0.0 MiB  GDN 3.0 MiB  ICE 0.00 MiB  peak 406 MiB
+  T= 16384  prefill 0.09s (175,721 tok/s, ICE 0.00s)  decode 83.1 tok/s (12.0 ms/step, ICE 0 us)  KV 0.0 MiB  GDN 3.0 MiB  ICE 0.00 MiB  peak 406 MiB
+  T= 32768  prefill 0.19s (173,007 tok/s, ICE 0.00s)  decode 85.2 tok/s (11.7 ms/step, ICE 0 us)  KV 0.0 MiB  GDN 3.0 MiB  ICE 0.00 MiB  peak 406 MiB
+
+### G_C: 151.3M params (289 MiB in torch.bfloat16), layout GGGGGGGGGGGGGGGG
+  T=  4096  prefill 0.03s (150,170 tok/s, ICE 0.02s)  decode 76.8 tok/s (13.0 ms/step, ICE 275 us)  KV 0.0 MiB  GDN 3.0 MiB  ICE 0.43 MiB  peak 407 MiB
+  T= 16384  prefill 0.10s (166,999 tok/s, ICE 0.06s)  decode 77.5 tok/s (12.9 ms/step, ICE 272 us)  KV 0.0 MiB  GDN 3.0 MiB  ICE 1.04 MiB  peak 557 MiB
+  T= 32768  prefill 0.19s (175,468 tok/s, ICE 0.12s)  decode 76.9 tok/s (13.0 ms/step, ICE 282 us)  KV 0.0 MiB  GDN 3.0 MiB  ICE 1.52 MiB  peak 557 MiB
+
+### G_V: 147.7M params (282 MiB in torch.bfloat16), layout GGGGGGGGGGGGGGGG
+  T=  4096  prefill 0.03s (150,709 tok/s, ICE 0.02s)  decode 79.0 tok/s (12.7 ms/step, ICE 330 us)  KV 0.0 MiB  GDN 3.0 MiB  ICE 0.43 MiB  peak 408 MiB
+  T= 16384  prefill 0.10s (160,846 tok/s, ICE 0.06s)  decode 79.0 tok/s (12.7 ms/step, ICE 328 us)  KV 0.0 MiB  GDN 3.0 MiB  ICE 1.04 MiB  peak 408 MiB
+  T= 32768  prefill 0.19s (174,518 tok/s, ICE 0.13s)  decode 79.3 tok/s (12.6 ms/step, ICE 335 us)  KV 0.0 MiB  GDN 3.0 MiB  ICE 1.52 MiB  peak 408 MiB
+
+### G_VR: 147.7M params (282 MiB in torch.bfloat16), layout GGGGGGGGGGGGGGGG
+  T=  4096  prefill 0.04s (113,555 tok/s, ICE 0.03s)  decode 80.1 tok/s (12.5 ms/step, ICE 346 us)  KV 0.0 MiB  GDN 3.0 MiB  ICE 0.52 MiB  peak 410 MiB
+  T= 16384  prefill 0.11s (153,393 tok/s, ICE 0.08s)  decode 79.6 tok/s (12.6 ms/step, ICE 339 us)  KV 0.0 MiB  GDN 3.0 MiB  ICE 1.42 MiB  peak 413 MiB
+  T= 32768  prefill 0.19s (171,405 tok/s, ICE 0.19s)  decode 78.4 tok/s (12.8 ms/step, ICE 360 us)  KV 0.0 MiB  GDN 3.0 MiB  ICE 2.27 MiB  peak 413 MiB
+
+== memory model per sequence (weights shared): M(batch,T) = W + batch*(fixed + per_token*T)
+   cache memory only (no activations/workspace): max batch is an upper bound
+             arm           W MiB       fixed MiB        KV B/tok       ICE B/tok     seq@32K MiB    seq@128K MiB  batch@32K/16GB  batch@32K/24GB  batch@32K/80GB
+               B           276.4             2.8            2048             0.0            66.8           258.8             241             363            1222
+               G           281.8             3.2               0             0.0             3.2             3.2            5014            7566           25425
+             G_C           288.6             3.5               0            40.7             4.7             8.5            3405            5138           17271
+             G_V           281.8             3.5               0            40.7             4.7             8.5            3406            5140           17273
+            G_VR           281.8             3.5               0            64.7             5.5            11.5            2940            4436           14907
+
+saved /vol/benchmark_t200.json
+✓ App completed. View run at 
+https://modal.com/apps/tien-phat140205/main/ap-ITL7a2VTUsUKntfiQWrsEb
