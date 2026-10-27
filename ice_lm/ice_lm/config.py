@@ -99,6 +99,11 @@ class TrainConfig:
     resume: bool = True
     keep_resume_config: bool = True  # a resumed run keeps its saved schedule / data-order settings
     keep_checkpoint: bool = False    # keep ckpt_latest.pt (+ optimizer shards) after model_final.pt is written
+    schedule: str = "cosine"         # "cosine" (warmup, cosine to min_lr_ratio) | "wsd" (warmup, constant, linear decay)
+    decay_frac: float = 0.2          # wsd: share of the steps in the final decay
+    branch_tokens: str = ""          # wsd: comma-separated shorter budgets (e.g. "2e8,4e8"); the run saves
+                                     # ckpt_branch_<tokens>.pt where each one's decay starts
+    branch_from: str = ""            # wsd: start this (shorter-budget) run from such a ckpt_branch_*.pt
 
 
 # ---------------------------------------------------------------------------

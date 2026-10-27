@@ -26,8 +26,10 @@ from ice_lm.data import TrainWindows, alpha_mask_for_data, collate, load_meta, s
 from ice_lm.evals import eval_loss_splits
 from ice_lm.ice_features import set_alpha_mask
 from ice_lm.model import ICELM, kv_bytes_per_token, layer_plan
+import shutil  # noqa: E402
+
 from ice_lm.utils import (JsonlLogger, build_optimizer, cleanup_distributed, init_wandb, is_main, load_checkpoint,
-                          load_optimizer_shard, lr_at, pick_precision, save_checkpoint, save_optimizer_shard,
+                          load_optimizer_shard, lr_at, lr_wsd, pick_precision, wsd_decay_steps, save_checkpoint, save_optimizer_shard,
                           setup_distributed)
 
 
@@ -53,7 +55,7 @@ def parse_args():
 # (micro_batch / num_workers / GPU count may change: the samples of optimizer step s are always the indices
 #  [s*S, (s+1)*S) with S = global batch / seq_len, see ice_lm/data.py TrainWindows)
 RESUME_KEYS = ("total_tokens", "global_batch_tokens", "lr", "min_lr_ratio", "warmup_tokens", "seq_len", "seed",
-               "ice_dropout", "weight_decay", "beta1", "beta2", "grad_clip")
+               "ice_dropout", "weight_decay", "beta1", "beta2", "grad_clip", "schedule", "decay_frac")
 
 
 def main():
@@ -73,6 +75,11 @@ def main():
         cleanup_distributed()
         return
     saved_cfg = os.path.join(tcfg.out_dir, "config.json")
+    if tcfg.branch_from and not os.path.exists(os.path.join(tcfg.out_dir, "ckpt_latest.pt")):
+        # a WSD decay branch: continue the longer run's stable phase from its saved state, with this run's budget
+        assert tcfg.schedule == "wsd" and world == 1, "branch_from: wsd schedule on one process"
+        shutil.copy(tcfg.branch_from, os.path.join(tcfg.out_dir, "ckpt_latest.pt"))
+        shutil.copy(os.path.join(os.path.dirname(tcfg.branch_from), "config.json"), saved_cfg)
     data_meta = meta
     if tcfg.resume and os.path.exists(os.path.join(tcfg.out_dir, "ckpt_latest.pt")) and os.path.exists(saved_cfg):
         # continuing a run: keep the architecture and the schedule / data order it was started with
@@ -80,7 +87,8 @@ def main():
             saved = json.load(f)
         old = model_config_from_dict(saved["model"])
         if tcfg.keep_resume_config:
-            fixed = {k: v for k, v in saved.get("train", {}).items() if k in RESUME_KEYS and getattr(tcfg, k) != v}
+            fixed = {k: v for k, v in saved.get("train", {}).items() if k in RESUME_KEYS and getattr(tcfg, k) != v
+                     and not (tcfg.branch_from and k == "total_tokens")}       # a branch has its own budget
             if fixed:
                 if main_proc:
                     print(f"[train] resuming with the run's saved settings (ignoring the new values): "
@@ -174,6 +182,12 @@ def main():
     if main_proc:
         print(f"[train] steps={total_steps} (now {state['step']})  grad_accum={grad_accum}  "
               f"tokens/step={tokens_per_step:,}  warmup_steps={warmup_steps}")
+    branch_steps = {}
+    if tcfg.branch_tokens:
+        assert tcfg.schedule == "wsd" and not zero, "branch_tokens: wsd schedule without a sharded optimizer"
+        for b in (float(v) for v in tcfg.branch_tokens.split(",")):
+            tb = max(1, math.ceil(b / tokens_per_step))
+            branch_steps[tb - wsd_decay_steps(tb, tcfg.decay_frac)] = b
     t_start = time.time()
     t_ckpt = time.time()
     t_log, tok_log = time.time(), 0
@@ -181,7 +195,8 @@ def main():
     stop_reason = None
     while state["step"] < total_steps:
         step = state["step"]
-        lr = lr_at(step, total_steps, warmup_steps, tcfg.lr, tcfg.min_lr_ratio)
+        lr = (lr_wsd(step, total_steps, warmup_steps, tcfg.lr, tcfg.min_lr_ratio, tcfg.decay_frac)
+              if tcfg.schedule == "wsd" else lr_at(step, total_steps, warmup_steps, tcfg.lr, tcfg.min_lr_ratio))
         for gparam in opt.param_groups:
             gparam["lr"] = lr
         loss_acc = torch.zeros((), device=device)      # accumulated on the GPU: no sync per micro-step
@@ -207,6 +222,11 @@ def main():
         state["step"] += 1
         state["tokens"] += tokens_per_step
         state["samples"] += tcfg.micro_batch * grad_accum * world
+        if state["step"] in branch_steps and main_proc:         # wsd: where a shorter budget's decay starts
+            save_checkpoint(os.path.join(tcfg.out_dir, f"ckpt_branch_{branch_steps[state['step']]:.0e}.pt"),
+                            raw_model, opt, scaler, dict(state))
+            print(f"[train] saved the decay-branch point of the {branch_steps[state['step']]:.0e}-token run "
+                  f"at step {state['step']}", flush=True)
         tok_log += tokens_per_step
 
         if state["step"] % tcfg.log_every == 0 or state["step"] == 1:      # same decision on every rank

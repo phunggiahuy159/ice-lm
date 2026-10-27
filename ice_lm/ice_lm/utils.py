@@ -87,6 +87,23 @@ def lr_at(step: int, total_steps: int, warmup_steps: int, lr: float, min_ratio: 
     return lr * (min_ratio + (1 - min_ratio) * 0.5 * (1 + math.cos(math.pi * prog)))
 
 
+def wsd_decay_steps(total_steps: int, decay_frac: float) -> int:
+    return max(1, round(decay_frac * total_steps))
+
+
+def lr_wsd(step: int, total_steps: int, warmup_steps: int, lr: float, min_ratio: float, decay_frac: float) -> float:
+    """Warmup-stable-decay: linear warmup, constant lr, then a linear decay to min_ratio * lr over the last
+    decay_frac of the steps. The stable phase does not depend on total_steps, so a run to a larger budget can save
+    the state where a shorter run's decay starts and branch it off (TrainConfig.branch_tokens / branch_from)."""
+    if step < warmup_steps:
+        return lr * (step + 1) / max(1, warmup_steps)
+    d = wsd_decay_steps(total_steps, decay_frac)
+    start = total_steps - d
+    if step < start:
+        return lr
+    return lr * (1 - (1 - min_ratio) * min(1.0, (step - start + 1) / d))
+
+
 def save_checkpoint(path: str, model, optimizer, scaler, state: dict):
     tmp = path + ".tmp"
     raw = model.module if hasattr(model, "module") else model

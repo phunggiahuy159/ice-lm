@@ -712,3 +712,14 @@ def test_syn_fit_windows():
         for e in exs:
             assert e["input_ids"].shape == (256,) and all(k in e for k in V2_KEYS)
             assert (e["ice_v_tok"] < 512).all() and (e["ice_v_tok"] >= 0).any()
+
+
+def test_lr_wsd_branches_share_the_stable_phase():
+    """WSD: a shorter budget's schedule equals the longer one up to its own decay start, then decays to min."""
+    from ice_lm.utils import lr_wsd, wsd_decay_steps
+    long_, short, warm = 300, 100, 10
+    d = wsd_decay_steps(short, 0.2)
+    for s in range(short - d):
+        assert lr_wsd(s, short, warm, 1e-3, 0.1, 0.2) == lr_wsd(s, long_, warm, 1e-3, 0.1, 0.2)
+    assert abs(lr_wsd(short - 1, short, warm, 1e-3, 0.1, 0.2) - 1e-4) < 1e-12
+    assert lr_wsd(short - d - 1, short, warm, 1e-3, 0.1, 0.2) == 1e-3
