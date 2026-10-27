@@ -27,6 +27,24 @@ Runs, models and data live on Modal (see "Infrastructure"); this repo holds code
      Notes: `research/round2/impl_v2_notes.md`.
   4. Remaining budget for this round: ≈ $29.
 
+### Update (27 Oct, ~10:30)
+* **ICE-V2 is implemented** (commit 34de81d): 169 tests pass on local CPU, and the old arms are bit-identical.
+  Notes: `research/round2/impl_v2_notes.md`.
+* **Kaggle notebook `ice_lm/notebooks/ice_eval_kaggle.ipynb`:** the user runs it on 2×T4. It holds every blocked
+  GPU job: the re-evaluation of B/G/G_VR, the fitter gate, `recall_check.py`, `line_completion.py` and the ICE-V2
+  ladder, followed by a SUMMARY.md with the gate and decision2 prediction checks.
+  - The code is embedded from a commit.
+  - The inputs come from the Modal volume, via Kaggle secrets, or from an attached dataset.
+  - Results are uploaded to `kaggle_results/latest` on the volume.
+  - It was dry-run end to end on CPU with tiny models.
+  - Rebuild it with `python ice_lm/notebooks/build_eval_notebook.py` after committing code.
+* **Modal downloads of large files can time out,** and a re-download over a partial file left a right-sized but
+  corrupt checkpoint. Delete the partial file before retrying, and check `zipfile.ZipFile(p).testzip()`. The
+  notebook does both.
+* **The synthetic-recall "B = 0" is mostly a rare-token artefact:** see the results README, last section.
+* **Slides:** `slides/ice_gstar.html` + `slides/talk_notes.md`.
+* **Round 3:** advisors are writing `research/round3/proposal_{conflicts,evidence,directions}.md`.
+
 ## 1. TL;DR
 
 * **ICE** = an exact in-context n-gram lookup on token IDs (CPU hash table, ~41 B/token, vs 2,048 B/token KV for

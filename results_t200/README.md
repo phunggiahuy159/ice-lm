@@ -93,3 +93,23 @@ noisier across seeds (e.g. G_VR conflict_g1 0.31 vs 0.18; override_same 0.42 vs 
 
 Caveats (seed 1 section above): 200M tokens; 140M parameters; the ICE table bytes are estimates (benchmark not yet run on the G
 arms).
+
+## Synthetic recall: the hybrid's 0.00 is mostly an artefact (27 Oct, CPU check)
+`tables.txt` reports B at about 0 on repeat and MQAR. Those tasks draw tokens uniformly from about 31K vocabulary
+ids, mostly rare tokens whose embeddings barely trained. Attention has to match them through the embeddings, while
+ICE matches the ids directly. `scripts/recall_check.py` re-scores the same tasks with frequent tokens and with
+real text. The CPU run on the real t200 checkpoints used n = 10 per cell, fp32
+(`research/round3/recall_check_cpu_n10.json`):
+
+| repeat, token accuracy | B | G_VR |
+|---|---|---|
+| random tokens, full vocabulary (as in evaluate.py) | 0.04–0.05 | 0.98–1.00 |
+| random frequent tokens (top 5K) | 0.44–0.62 | 0.98–1.00 |
+| real prose, repeated verbatim | 0.58–0.62 | 0.94–0.97 |
+| **MQAR**, frequent tokens | 0.09–0.19 | 0.61–0.73 |
+
+- **Do not cite the full-vocab synthetic numbers as "0 vs 0.9".** The fair statement is that B repeats real text
+  about 60% of the time and ICE about 97%.
+- **ICE is weaker on frequent-token MQAR than on full-vocab MQAR,** because spurious matches appear. This is the
+  same conflict weakness as in CodeRecall.
+- The Kaggle notebook (`ice_lm/notebooks/ice_eval_kaggle.ipynb`) reruns this check with n = 50.
