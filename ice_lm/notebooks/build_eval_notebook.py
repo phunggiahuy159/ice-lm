@@ -28,27 +28,33 @@ def code(s):
 
 
 md(f"""
-# ICE round 2 on Kaggle: re-evaluation, ICE-V2 fits, new metrics
+# ICE on Kaggle: the round-2/3 GPU jobs (re-evaluation, frozen-backbone fits, line completion)
 
-Runs the GPU part of round 2 (`research/round2/decision2.md`) that was blocked by the Modal spend limit. Code:
-commit `{commit}` of `huypg-zenai/ice-lm`, embedded below, so no GitHub access is needed.
+Runs the jobs of `research/round3/decision3.md` §3 that were blocked by the Modal spend limit. Code: commit
+`{commit}` of `huypg-zenai/ice-lm`, embedded below (no GitHub access needed).
 
-| part | what | why |
-|---|---|---|
-| `refs` | re-evaluate B, G, G_VR on this GPU | every comparison below is paired on the same hardware (T4, fp32) |
-| `gate` | evaluate the old VR scorer refitted on G_VR's frozen backbone | run 1: must match G_VR within 0.005, else the fitter is broken |
-| `recall` | repeat / MQAR with full-vocab, frequent and natural tokens | is the hybrid's 0.00 on synthetic recall real or a task artefact? |
-| `linecomp` | greedy line completion, exact match, on held-out code | the code use case that loss does not measure |
-| `v2` | ICE-V2 scorer fits on frozen G_VR / G / B (+ synthetic) and their evaluation | runs 2-5 of decision2 (pre-registered predictions printed at the end) |
+| # | job | prediction (pre-registered) | rule |
+|---|---|---|---|
+| 1-3 | eval G_VR, B, G on this GPU (T4, fp32) | each within 0.006 of the H100 numbers; G_VR-B, G-B within 0.003 | deltas off: compare T4 vs T4 only |
+| 4-6 | line completion B, G_VR, G (400 windows) | G_VR-B: all >= +1 pt, repeat >= +5, novel within ±2 | slide only if the CI excludes 0 |
+| 7 | gate: old VR scorer refitted on G_VR's frozen backbone | within ±0.005 of G_VR (T4) | fail: fix the fitter |
+| 8 | run 3: V2 scorer fitted on frozen G (no attention, backbone never saw ICE) | code - B(T4) in [-0.025, +0.005] | <= -0.02 "beats"; ±0.01 "matches"; > +0.01 needs co-training |
+| 9-10 | run 2: V2 on frozen G_VR, 2 seeds | code -0.003 to -0.010, prose ±0.003, follow <= 0.32 | code > -0.003 or prose > +0.003: stop V2 |
+| 11 | run 4: V2 on frozen B | -0.005 to -0.02 | < 0.005: "attention-free only" |
+| 12 | recall check (n = 50) | B real text 0.55-0.65, G_VR >= 0.94 | a cell moves > 0.10: update the notes |
+| 13 | run 5: V2 + synthetic conflict items | as decision2 | off the slides |
+
+All fits use `--unseen`: training windows none of the backbones saw. If job 1 takes over 75 min, jobs 11-13 are skipped.
 
 **Kaggle settings:** *Accelerator* **GPU T4 x2**, *Internet* **On**. Then **Save Version → Save & Run All (Commit)**:
-it runs in the background (up to 12 h) and keeps the outputs. Expect roughly 6-10 h for everything on 2 x T4;
-jobs run in priority order, and no new job starts after `MAX_HOURS`.
+it runs in the background (up to 12 h) and keeps the outputs. Expect roughly 8-11 h on 2 x T4; jobs run in priority
+order, and no new job starts after `MAX_HOURS`.
 
 **Inputs (pick one):**
 * **Modal (default):** *Add-ons → Secrets*: add `MODAL_TOKEN_ID` and `MODAL_TOKEN_SECRET` (workspace
   tien-phat140205) and attach them to this notebook. The notebook downloads the checkpoints and data from the
-  `ice-lm` volume (read only) and uploads its results to `kaggle_results/` on that volume. No Modal compute is used.
+  `ice-lm` volume (read only; size- and CRC-checked) and uploads its results to `kaggle_results/latest` on that
+  volume. No Modal compute is used.
 * **Kaggle dataset:** upload a dataset holding `runs/<name>/config.json` + `model_final.pt` for t200_B, t200_G,
   t200_G_VR, fit_GVRbb_vr, and `data/` with meta.json, val_code.bin, val_prose.bin, train.bin; attach it.
   The notebook finds it under `/kaggle/input` (set `SOURCE = "dataset"`).
@@ -65,7 +71,7 @@ VAL_BATCHES  = 500      # held-out windows per split, as in results_t200
 N_CODERECALL = 100      # items per CodeRecall category and gap
 N_TASK       = 50       # items per synthetic task and length
 N_SYN        = 50       # items per synthetic conflict template family and gap
-LINE_WINDOWS = 100      # held-out code windows for line completion (3 lines each)
+LINE_WINDOWS = 400      # held-out code windows for line completion (3 lines each)
 PRECISION    = "fp32"   # T4 has no bf16; "auto" would use fp16 (faster, but untested for these bf16-trained models)
 MAX_HOURS    = 11.0     # no new job starts after this (Kaggle stops a session at 12 h)
 SOURCE       = "auto"   # "modal" | "dataset" | "auto" (dataset if one is attached, else Modal)
@@ -202,6 +208,8 @@ code("""
 import threading, queue, datetime
 UPLOAD_LOCK = threading.Lock()
 STATUS = {}
+LATE = set()            # chains skipped if the first evaluation is slow (decision3: job 1 > 75 min)
+SLOW = threading.Event()
 
 def upload_results():
     if not UPLOAD_TO_MODAL:
@@ -212,6 +220,10 @@ def upload_results():
 
 def run_chain(chain, gpu):
     name, jobs = chain
+    if name in LATE and SLOW.is_set():
+        for jname, _, _ in jobs:
+            STATUS[jname] = "skipped (job 1 took > 75 min)"
+        return
     for i, (jname, cmd, out) in enumerate(jobs):
         later = [o for _, _, o in jobs[i:]]
         if all(os.path.exists(o) for o in later):
@@ -230,6 +242,8 @@ def run_chain(chain, gpu):
             STATUS[jname] = f"FAILED rc={rc} after {dt:.0f} min (see logs/{jname}.log)"
             return                      # later jobs of this chain depend on this one
         STATUS[jname] = f"done in {dt:.0f} min"
+        if jname == "eval_t200_G_VR" and dt > 75:
+            SLOW.set()
         upload_results()
 
 def run_all(chains):
@@ -257,8 +271,8 @@ def run_all(chains):
 """)
 
 md("""
-## 7. Jobs
-All evaluations use the same settings, so every number in the summary is paired (same items, same GPU type).
+## 7. Jobs (decision3 §3, priority order)
+All evaluations use the same settings, so every comparison in the summary is paired (same items, same GPU type).
 ICE-off controls are skipped (`--no_ice_off`): for the frozen-backbone fits ICE-off is exactly the base model.
 """)
 code("""
@@ -267,45 +281,41 @@ EVAL = (f"python scripts/evaluate.py --data_dir {DATA} --val_batches {VAL_BATCHE
         f"--n_coderecall {N_CODERECALL} --n_syn {N_SYN} --precision {P} --no_ice_off")
 LINE = f"python scripts/line_completion.py --data_dir {DATA} --windows {LINE_WINDOWS} --precision {P} {EXTRA_LINE_ARGS}"
 FIT = (f"python scripts/fit_scorer.py --data_dir {DATA} --tokens {FIT_TOKENS} --micro_batch 2 --accum 4 "
-       f"--num_workers 2 --precision {P} {EXTRA_FIT_ARGS}")
-
-def run_dir(name):
-    return f"{RUNS_IN}/{name}" if os.path.isdir(f"{RUNS_IN}/{name}") else f"{RUNS_FIT}/{name}"
-
-def eval_chain(name, fit_cmd=None):
-    jobs = []
-    if fit_cmd:
-        jobs.append((f"fit_{name}", f"{FIT} {fit_cmd} --out_dir {RUNS_FIT}/{name}", f"{RUNS_FIT}/{name}/model_final.pt"))
-    rd = f"{RUNS_FIT}/{name}" if fit_cmd else f"{RUNS_IN}/{name}"
-    jobs.append((f"eval_{name}", f"{EVAL} --runs {rd} --out {RES}/eval_{name}.json", f"{RES}/eval_{name}.json"))
-    if PARTS["linecomp"]:
-        jobs.append((f"line_{name}", f"{LINE} --runs {rd} --out {RES}/line_{name}.json", f"{RES}/line_{name}.json"))
-    return (name, jobs)
-
-V2 = f"--cand vr --v2 --v2_feats {V2_FEATS} --listwise 0.25"
+       f"--num_workers 2 --precision {P} --unseen {EXTRA_FIT_ARGS}")
 GVR, G, B = f"{RUNS_IN}/t200_G_VR", f"{RUNS_IN}/t200_G", f"{RUNS_IN}/t200_B"
-chains = []                                                    # priority order
-if PARTS["refs"] or PARTS["gate"]:
-    chains.append(eval_chain("t200_G_VR"))
-if PARTS["gate"]:
-    chains.append(eval_chain("fit_GVRbb_vr"))
-if PARTS["refs"]:
-    chains.append(eval_chain("t200_B"))
-if PARTS["recall"]:
+V2 = f"--cand vr --v2 --v2_feats {V2_FEATS} --listwise 0.25"
+
+def ev(name, rd):
+    return (f"eval_{name}", f"{EVAL} --runs {rd} --out {RES}/eval_{name}.json", f"{RES}/eval_{name}.json")
+def line(name, rd):
+    return (f"line_{name}", f"{LINE} --runs {rd} --out {RES}/line_{name}.json", f"{RES}/line_{name}.json")
+def fit(name, args):
+    return (f"fit_{name}", f"{FIT} {args} --out_dir {RUNS_FIT}/{name}", f"{RUNS_FIT}/{name}/model_final.pt")
+
+chains = []
+if PARTS["refs"]:                                                                    # 1-3
+    chains += [("t200_G_VR", [ev("t200_G_VR", GVR)]), ("t200_B", [ev("t200_B", B)]), ("t200_G", [ev("t200_G", G)])]
+if PARTS["linecomp"]:                                                                # 4-6
+    chains += [(f"line_{n}", [line(n, rd)]) for n, rd in (("t200_B", B), ("t200_G_VR", GVR), ("t200_G", G))]
+if PARTS["gate"]:                                                                    # 7
+    chains.append(("gate", [ev("fit_GVRbb_vr", f"{RUNS_IN}/fit_GVRbb_vr")]))
+if PARTS["v2"]:
+    run3 = [fit("fit_Gbb_v2", f"--base_run {G} {V2} --seed 7"), ev("fit_Gbb_v2", f"{RUNS_FIT}/fit_Gbb_v2")]
+    chains.append(("run3", run3 + ([line("fit_Gbb_v2", f"{RUNS_FIT}/fit_Gbb_v2")] if PARTS["linecomp"] else [])))   # 8
+    for name, seed in (("fit_GVRbb_v2", 7), ("fit_GVRbb_v2_s8", 8)):                 # 9-10
+        chains.append((name, [fit(name, f"--base_run {GVR} {V2} --init_from {GVR} --seed {seed}"),
+                              ev(name, f"{RUNS_FIT}/{name}")]))
+    chains.append(("run4", [fit("fit_Bbb_v2", f"--base_run {B} {V2} --seed 7"),                                   # 11
+                            ev("fit_Bbb_v2", f"{RUNS_FIT}/fit_Bbb_v2")]))
+    LATE.add("run4")
+if PARTS["recall"]:                                                                  # 12
     chains.append(("recall", [("recall_check", f"python scripts/recall_check.py --runs {B} {G} {GVR} --data_dir {DATA} "
-                                f"--precision {P} --out {RES}/recall_check.json", f"{RES}/recall_check.json")]))
-if PARTS["v2"]:
-    chains.append(eval_chain("fit_GVRbb_v2", f"--base_run {GVR} {V2} --init_from {GVR} --seed 7"))     # run 2
-if PARTS["refs"]:
-    chains.append(eval_chain("t200_G"))
-if PARTS["v2"]:
-    chains += [eval_chain("fit_Gbb_vr", f"--base_run {G} --cand vr --seed 7"),                         # run 3, old
-               eval_chain("fit_Gbb_v2", f"--base_run {G} {V2} --seed 7"),                              # run 3, V2
-               eval_chain("fit_Bbb_v2", f"--base_run {B} {V2} --seed 7"),                              # run 4
-               eval_chain("fit_GVRbb_v2syn", f"--base_run {GVR} {V2} --init_from {GVR} --syn_frac 0.02 --seed 7"),  # run 5
-               eval_chain("fit_GVRbb_v2_s8", f"--base_run {GVR} {V2} --init_from {GVR} --seed 8"),     # run 2, seed 2
-               eval_chain("fit_GVRbb_v2q", f"--base_run {GVR} --cand vr --v2 --v2_feats q --listwise 0.25 "
-                                           f"--init_from {GVR} --seed 7")]                              # F2 on the model
+                               f"--n 50 --precision {P} --out {RES}/recall_check.json", f"{RES}/recall_check.json")]))
+    LATE.add("recall")
+if PARTS["v2"]:                                                                      # 13
+    chains.append(("run5", [fit("fit_GVRbb_v2syn", f"--base_run {GVR} {V2} --init_from {GVR} --syn_frac 0.02 --seed 7"),
+                            ev("fit_GVRbb_v2syn", f"{RUNS_FIT}/fit_GVRbb_v2syn")]))
+    LATE.add("run5")
 for name, jobs in chains:
     print(name, "->", [j for j, _, _ in jobs])
 """)
@@ -315,36 +325,42 @@ code("""
 run_all(chains)
 """)
 
-md("## 9. Summary: tables, gate and pre-registered predictions")
+md("## 9. Summary: tables, T4-vs-H100 check, gate and pre-registered predictions")
 code("""
+import numpy as np
 evals = sorted(glob.glob(f"{RES}/eval_*.json"))
 if evals:
     sh(f"cd {CODE} && python scripts/evaluate.py --from_json {' '.join(evals)} --data_dir {DATA} --reference B "
        f"--n_syn {N_SYN} --out {RES}/all_eval.json > {RES}/all_eval_tables.txt 2>&1; tail -c 20000 {RES}/all_eval_tables.txt", check=False)
-
-def load_eval(name):
-    p = f"{RES}/eval_{name}.json"
-    return next(iter(json.load(open(p)).values())) if os.path.exists(p) else None
-
 merged = json.load(open(f"{RES}/all_eval.json")) if os.path.exists(f"{RES}/all_eval.json") else {}
+
 def E(name):                       # merged result (has the CodeRecall summaries cr/<category>)
-    return next((v for k, v in merged.items() if k.split("#")[0].rstrip("/").endswith("/" + name)), None) or load_eval(name)
+    r = next((v for k, v in merged.items() if k.split("#")[0].rstrip("/").endswith("/" + name)), None)
+    if r is None and os.path.exists(f"{RES}/eval_{name}.json"):
+        r = next(iter(json.load(open(f"{RES}/eval_{name}.json")).values()))
+    return r
+
+def LC(name):
+    p = f"{RES}/line_{name}.json"
+    if not os.path.exists(p):
+        return None
+    j = json.load(open(p))
+    return dict(next(iter(j["results"].values())), items=j["items"])
 
 KEYS = [("code", "code/all_loss"), ("copyable", "code/copyable_loss"), ("copy>512", "code/copy_far_loss"),
         ("lk_wrong", "code/lk_wrong_loss"), ("follow", "code/follow_wrong_lookup"), ("prose", "prose/all_loss"),
         ("acc", "code/all_acc"), ("cr g1", "cr/conflict_g1"), ("cr g2", "cr/conflict_g2"), ("cr g5", "cr/conflict_g5"),
         ("cr ovr_diff", "cr/override_diff"), ("cr copy_same", "cr/copy_same"),
         ("syn fit", "syn/fit_mean"), ("syn held", "syn/heldout_mean")]
-names = ["t200_B", "t200_G", "t200_G_VR", "fit_GVRbb_vr", "fit_GVRbb_v2", "fit_GVRbb_v2_s8", "fit_GVRbb_v2q",
-         "fit_Gbb_vr", "fit_Gbb_v2", "fit_Bbb_v2", "fit_GVRbb_v2syn"]
+names = ["t200_B", "t200_G", "t200_G_VR", "fit_GVRbb_vr", "fit_Gbb_v2", "fit_GVRbb_v2", "fit_GVRbb_v2_s8",
+         "fit_Bbb_v2", "fit_GVRbb_v2syn"]
 lines = ["| run | " + " | ".join(k for k, _ in KEYS) + " | line em | line em (repeat/reuse/novel) |",
          "|---" * (len(KEYS) + 3) + "|"]
 for n in names:
     r = E(n)
     if r is None:
         continue
-    lc = json.load(open(f"{RES}/line_{n}.json"))["results"] if os.path.exists(f"{RES}/line_{n}.json") else None
-    lc = next(iter(lc.values())) if lc else None
+    lc = LC(n)
     cells = [f"{r[k]:.3f}" if isinstance(r.get(k), float) else "-" for _, k in KEYS]
     le = f"{lc['all/em']:.3f}" if lc else "-"
     lk = "/".join(f"{lc[k + '/em']:.2f}" for k in ("repeat", "reuse", "novel")) if lc else "-"
@@ -352,31 +368,70 @@ for n in names:
 
 def d(a, b, k="code/all_loss"):
     ra, rb = E(a), E(b)
-    return None if ra is None or rb is None else ra[k] - rb[k]
+    return None if ra is None or rb is None or k not in ra or k not in rb else ra[k] - rb[k]
 
 checks = []
 def check(label, val, ok, pred):
-    checks.append(f"| {label} | {'-' if val is None else f'{val:+.4f}' if isinstance(val, float) else val} | {pred} | "
-                  f"{'n/a' if val is None else 'PASS' if ok(val) else 'FAIL'} |")
-check("gate: refit old VR scorer - G_VR (code)", d("fit_GVRbb_vr", "t200_G_VR"), lambda v: abs(v) <= 0.005, "within ±0.005")
-check("run 2: V2 on G_VR bb - G_VR (code)", d("fit_GVRbb_v2", "t200_G_VR"), lambda v: -0.010 <= v <= -0.003, "-0.003 to -0.010")
-check("run 2 seed 8 - G_VR (code)", d("fit_GVRbb_v2_s8", "t200_G_VR"), lambda v: -0.010 <= v <= -0.003, "-0.003 to -0.010")
-r2 = E("fit_GVRbb_v2")
-check("run 2: follow wrong lookup", r2 and r2["code/follow_wrong_lookup"], lambda v: v <= 0.31, "<= 0.31")
-check("run 2: CodeRecall conflict_g1", r2 and r2.get("cr/conflict_g1"), lambda v: v >= 0.50, ">= 0.50")
-for n in ("fit_Gbb_vr", "fit_Gbb_v2"):
+    shown = "-" if val is None else (f"{val:+.4f}" if isinstance(val, float) else str(val))
+    checks.append(f"| {label} | {shown} | {pred} | {'n/a' if val is None else 'PASS' if ok(val) else 'FAIL'} |")
+
+H100 = {"t200_B": (1.7301, 3.3839), "t200_G": (1.8990, 3.4437), "t200_G_VR": (1.6897, 3.3243)}   # results_t200.json
+for n, (c, pr) in H100.items():
     r = E(n)
-    check(f"run 3: {n} code loss", r and r["code/all_loss"], lambda v: 1.705 <= v <= 1.735, "1.705-1.735 (H100 scale)")
-check("run 4: V2 on B bb - B (code)", d("fit_Bbb_v2", "t200_B"), lambda v: -0.02 <= v <= -0.005, "-0.005 to -0.02")
-rs, rb = E("fit_GVRbb_v2syn"), E("t200_B")
-for cat, thr in (("conflict_g2", 0.5), ("conflict_g5", 0.5), ("override_diff", 0.3)):
-    v = rs[f"cr/{cat}"] - rb[f"cr/{cat}"] if rs and rb and f"cr/{cat}" in rs else None
-    check(f"run 5: syn {cat} - B", v, lambda v, t=thr: v >= t, f">= +{thr}")
-check("run 5: code cost of syn vs run 2", d("fit_GVRbb_v2syn", "fit_GVRbb_v2"), lambda v: v <= 0.005, "<= +0.005")
-if rs and "syn/fit_mean" in rs and "syn/heldout_mean" in rs and E("fit_GVRbb_v2"):
-    base = E("fit_GVRbb_v2")
-    gf, gh = rs["syn/fit_mean"] - base.get("syn/fit_mean", 0), rs["syn/heldout_mean"] - base.get("syn/heldout_mean", 0)
-    check("run 5: held-out templates keep >= 50% of the gain", gh / gf if gf > 0 else None, lambda v: v >= 0.5, ">= 0.5")
+    check(f"1-3: {n} code, T4 - H100", r and r["code/all_loss"] - c, lambda v: abs(v) <= 0.006, "within ±0.006")
+    check(f"1-3: {n} prose, T4 - H100", r and r["prose/all_loss"] - pr, lambda v: abs(v) <= 0.006, "within ±0.006")
+for a in ("t200_G_VR", "t200_G"):
+    v = d(a, "t200_B")
+    check(f"1-3: ({a} - B) T4 vs H100", None if v is None else v - (H100[a][0] - H100["t200_B"][0]),
+          lambda v: abs(v) <= 0.003, "within ±0.003")
+
+def window_boot(a, b, kind="all", n_boot=2000):
+    # paired G_VR-B line-EM difference with a window bootstrap (items of one window resampled together)
+    la, lb = LC(a), LC(b)
+    if not la or not lb:
+        return None
+    w = np.array([it["window"] for it in la["items"]]); k = np.array([it["kind"] for it in la["items"]])
+    da = np.array(la["items_em"], float) - np.array(lb["items_em"], float)
+    sel = np.ones(len(da), bool) if kind == "all" else (k == kind)
+    wins = np.unique(w[sel])
+    if len(wins) == 0:
+        return None
+    rng = np.random.default_rng(0)
+    by = {u: da[sel & (w == u)] for u in wins}
+    boots = []
+    for _ in range(n_boot):
+        pick = rng.choice(wins, size=len(wins))
+        x = np.concatenate([by[u] for u in pick])
+        boots.append(x.mean())
+    return float(da[sel].mean()), float(np.percentile(boots, 2.5)), float(np.percentile(boots, 97.5))
+
+for kind, thr in (("all", 0.01), ("repeat", 0.05), ("novel", None)):
+    b = window_boot("t200_G_VR", "t200_B", kind)
+    if b is None:
+        check(f"4-6: line EM G_VR - B ({kind})", None, lambda v: True, "")
+        continue
+    m, lo, hi = b
+    lbl = f"{m:+.3f} [{lo:+.3f}, {hi:+.3f}]"
+    if thr is None:
+        check(f"4-6: line EM G_VR - B ({kind}, 95% CI)", lbl, lambda v, m=m: abs(m) <= 0.02, "within ±0.02")
+    else:
+        check(f"4-6: line EM G_VR - B ({kind}, 95% CI)", lbl, lambda v, m=m, lo=lo, t=thr: m >= t and lo > 0,
+              f">= +{thr:.2f}, CI excludes 0")
+
+check("7: gate, refit old VR scorer - G_VR (T4)", d("fit_GVRbb_vr", "t200_G_VR"), lambda v: abs(v) <= 0.005, "within ±0.005")
+v3 = d("fit_Gbb_v2", "t200_B")
+check("8: run 3, V2 on frozen G - B (code)", v3, lambda v: -0.025 <= v <= 0.005, "-0.025 to +0.005")
+if v3 is not None:
+    checks.append(f"| 8: run 3 verdict | | | {'beats' if v3 <= -0.02 else 'matches' if abs(v3) <= 0.01 else 'needs co-training' if v3 > 0.01 else 'between'} |")
+check("9: run 2, V2 on G_VR bb - G_VR (code)", d("fit_GVRbb_v2", "t200_G_VR"), lambda v: -0.010 <= v <= -0.003, "-0.003 to -0.010")
+check("9: run 2, prose", d("fit_GVRbb_v2", "t200_G_VR", "prose/all_loss"), lambda v: abs(v) <= 0.003, "within ±0.003")
+r2 = E("fit_GVRbb_v2")
+check("9: run 2, follow wrong lookup", r2 and r2["code/follow_wrong_lookup"], lambda v: v <= 0.32, "<= 0.32")
+for cat in ("conflict_g2", "conflict_g5"):
+    check(f"9: run 2, {cat} vs G_VR", d("fit_GVRbb_v2", "t200_G_VR", f"cr/{cat}"), lambda v: v >= 0.3, ">= +0.3")
+s7, s8 = d("fit_GVRbb_v2", "t200_G_VR"), d("fit_GVRbb_v2_s8", "t200_G_VR")
+check("10: run 2 seed 8 - seed 7 (code)", None if s7 is None or s8 is None else s8 - s7, lambda v: abs(v) <= 0.003, "within ±0.003")
+check("11: run 4, V2 on frozen B - B (code)", d("fit_Bbb_v2", "t200_B"), lambda v: -0.02 <= v <= -0.005, "-0.005 to -0.02")
 
 rc = json.load(open(f"{RES}/recall_check.json"))["results"] if os.path.exists(f"{RES}/recall_check.json") else {}
 rec = []
@@ -385,10 +440,20 @@ if rc:
     rec = ["| task | " + " | ".join(arms) + " |", "|---" * (len(arms) + 1) + "|"]
     for k in [k[:-4] for k in next(iter(rc.values())) if k.endswith("/acc")]:
         rec.append(f"| {k} | " + " | ".join(f"{rc[a][k + '/acc']:.3f}" for a in arms) + " |")
+    nat = [k for k in rc.get("B", {}) if k.startswith("repeat/natural") and k.endswith("/acc")]
+    if nat:
+        check("12: recall, B repeat of real text (mean)", float(np.mean([rc["B"][k] for k in nat])), lambda v: 0.55 <= v <= 0.65, "0.55-0.65")
+        check("12: recall, G_VR repeat of real text (mean)", float(np.mean([rc["G_VR"][k] for k in nat])), lambda v: v >= 0.94, ">= 0.94")
 
-summary = ("# Kaggle round-2 results\\n\\n" + f"Precision {PRECISION}, {VAL_BATCHES} windows/split, GPU "
+rs, rb = E("fit_GVRbb_v2syn"), E("t200_B")
+for cat, thr in (("conflict_g2", 0.5), ("conflict_g5", 0.5), ("override_diff", 0.3)):
+    v = rs[f"cr/{cat}"] - rb[f"cr/{cat}"] if rs and rb and f"cr/{cat}" in rs and f"cr/{cat}" in rb else None
+    check(f"13: run 5 (syn), {cat} - B", v, lambda v, t=thr: v >= t, f">= +{thr}")
+check("13: run 5, code cost vs run 2", d("fit_GVRbb_v2syn", "fit_GVRbb_v2"), lambda v: v <= 0.005, "<= +0.005")
+
+summary = ("# Kaggle results (decision3 jobs)\\n\\n" + f"Precision {PRECISION}, {VAL_BATCHES} windows/split, GPU "
            f"{torch.cuda.get_device_name(0) if N_GPU else 'cpu'}\\n\\n## Main\\n" + "\\n".join(lines) +
-           "\\n\\n## Gate and pre-registered predictions (decision2.md)\\n| check | value | prediction | |\\n|---|---|---|---|\\n" +
+           "\\n\\n## Checks (decision3 §3)\\n| check | value | prediction | |\\n|---|---|---|---|\\n" +
            "\\n".join(checks) + "\\n\\n## Recall check (token accuracy)\\n" + "\\n".join(rec) +
            "\\n\\n## Jobs\\n" + "\\n".join(f"- {k}: {v}" for k, v in STATUS.items()) + "\\n")
 open(f"{RES}/SUMMARY.md", "w").write(summary)
