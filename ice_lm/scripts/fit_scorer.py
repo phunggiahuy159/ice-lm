@@ -34,7 +34,7 @@ import torch  # noqa: E402
 from torch.utils.data import DataLoader  # noqa: E402
 
 from ice_lm.config import dump_json, model_config_from_dict, to_dict  # noqa: E402
-from ice_lm.data import alpha_mask_for_data, collate, load_meta, split_batch  # noqa: E402
+from ice_lm.data import alpha_mask_for_data, collate, load_meta, open_tokens, split_batch  # noqa: E402
 from ice_lm.ice_features import set_alpha_mask  # noqa: E402
 from ice_lm.model import ICELM  # noqa: E402
 from ice_lm.syn_conflicts import FIT_FAMILIES, SynMixWindows, item_pool  # noqa: E402
@@ -58,6 +58,9 @@ ap.add_argument("--lr", type=float, default=3e-2)
 ap.add_argument("--seed", type=int, default=7)
 ap.add_argument("--num_workers", type=int, default=6)
 ap.add_argument("--precision", default="auto", help="auto | fp32 | bf16 (fp32 on T4: no bf16, fp16 has no scaler here)")
+ap.add_argument("--unseen", action="store_true",
+                help="fit on training windows the backbone never saw: the base run's window order (its seed), starting "
+                     "after the samples it consumed; --seed then picks the block (seed 7 = first block)")
 ap.add_argument("--accum", type=int, default=1, help="micro-batches per optimizer step (same batch on a smaller GPU)")
 a = ap.parse_args()
 
@@ -103,7 +106,17 @@ if a.syn_frac > 0:
     from transformers import AutoTokenizer
     pool = item_pool(AutoTokenizer.from_pretrained(load_meta(a.data_dir)["tokenizer"]), a.syn_pool, seed=a.seed)
     print(f"[fit] synthetic items: {len(pool)} ({', '.join(FIT_FAMILIES)}), syn_frac={a.syn_frac}", flush=True)
-ds = SynMixWindows(a.data_dir, seq_len, cfg.ice_orders, True, 0.0, a.seed, 0, 1, start_index=0,
+data_seed, start = a.seed, 0
+if a.unseen:
+    consumed = int(torch.load(os.path.join(a.base_run, "model_final.pt"), map_location="cpu",
+                              weights_only=False)["state"]["tokens"]) // seq_len
+    data_seed = saved["train"]["seed"]
+    start = consumed + (a.seed - 7) * math.ceil(a.tokens / seq_len)
+    n_win = (len(open_tokens(a.data_dir, "train")) - 1) // seq_len - 1
+    assert start + math.ceil(a.tokens / seq_len) <= n_win, "not enough unseen windows in the first pass"
+    print(f"[fit] unseen windows: data seed {data_seed}, samples {start}..{start + math.ceil(a.tokens / seq_len)} "
+          f"of {n_win} (the backbone consumed {consumed})", flush=True)
+ds = SynMixWindows(a.data_dir, seq_len, cfg.ice_orders, True, 0.0, data_seed, 0, 1, start_index=start,
                    micro_batch=a.micro_batch, cand=a.cand, v2=a.v2, pool=pool, syn_frac=a.syn_frac)
 loader = DataLoader(ds, batch_size=a.micro_batch, collate_fn=collate, num_workers=a.num_workers,
                     pin_memory=device.type == "cuda", persistent_workers=a.num_workers > 0,
