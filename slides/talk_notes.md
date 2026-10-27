@@ -19,9 +19,10 @@ Slides: `slides/ice_gstar.html`. Open it in a browser and use ← → to switch 
 
 **Slide 2 (about 65 s)**
 
-> Here is the result at 140 million parameters. The recurrent-only model scores 1.90 on code. The attention hybrid
-> scores 1.73. Recurrent plus ICE scores 1.69, **better than the hybrid, with no attention at all.** Prose improves
-> too.
+> Here is the result at 140 million parameters. On code loss, the recurrent-only model scores 1.90, the attention
+> hybrid 1.73, and recurrent plus ICE 1.69: **better than the hybrid, with no attention at all.** That's 4% lower
+> perplexity on code and 6% on text. Where the answer is a copy from far back, it predicts the exact next token 81%
+> of the time, against 76% for the hybrid.
 >
 > It uses 65 bytes per token instead of 2 kilobytes, which is 12 times less memory per sequence at 32K tokens. Decoding
 > is 9% slower. I trained a second seed and got the same win. Seed noise is a tenth of the gap.
