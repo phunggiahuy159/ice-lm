@@ -21,6 +21,14 @@ ICE-V / VR (cfg.ice_v, ICEPointer): the backbone never sees ICE (unless cfg.ice_
         log pi = log_softmax([s_0, s_1..K])   (empty slots and k = 0: -inf)
         log p(y) = logaddexp(log pi_0 + log_softmax(z)[y], logsumexp_{k: c_k = y} log pi_k)
     trained with -log p(y) + ice_v_aux * CE(z, y). k = 0 gives exactly log_softmax(z).
+ICE-V2 (cfg.ice_v2, research/round2/decision2.md section 2): slot group g(k) in {last, second, chain, anchor},
+        s_k = b[src_k] + L[src_k, len_k] + D[dist_k] + softplus(gamma~[src_k]) * clip(l[c_k], -20, 0)
+              + R_g[delta_k] + A_g[n_k] + N_g[r_k] + Q_g[q_k]
+        s_0 = w^T RMSNorm(h_last) + c0                      (no beta)
+    delta / n / r are token-only slot features (ice_features.V2_KEYS); q_k = rank of l[c_k] among the distinct slot
+    tokens (0..2), computed here from the detached backbone log-probs. The tables start at 0. Optional listwise
+    term (cfg.ice_v_listwise = lambda): + lambda * 1[y in the slots, >= 2 distinct tokens] *
+    (-log sum_{c_k = y} softmax_{valid slots}(s)_k).
 """
 from __future__ import annotations
 
@@ -34,12 +42,15 @@ from torch.utils.checkpoint import checkpoint
 
 from .config import ModelConfig
 from .gdn import GatedDeltaNetHeads, RMSNorm, resolve_backend, set_torch_kernel_compile
-from .ice_features import (MAX_MATCH, N_AGREE_BUCKETS, N_DIST_BUCKETS, N_LEN_BUCKETS, N_REL_BUCKETS, V_KEYS,
-                           n_slots)
+from .ice_features import (CNT_MAX, MAX_MATCH, N_AGREE_BUCKETS, N_DELTA, N_DIST_BUCKETS, N_LEN_BUCKETS, N_REL_BUCKETS,
+                           REC_MAX, V2_KEYS, V_KEYS, n_slots, slot_groups)
 
 OUT_KEYS = ("ice_s_star", "ice_len_star", "ice_agree_star", "ice_rel_star")
 V_DIST_MAX = 12          # largest distance bucket seen in training at seq_len 4096: longer distances use it
 _NEG = -1e4              # finite "-inf" where a gradient flows (exp underflows to exactly 0 in fp32)
+Q_MAX = 2                # V2: rank of the backbone log-prob among the distinct slot tokens, clipped
+V2_TABLES = dict(d=("R", N_DELTA), n=("A", CNT_MAX + 1), r=("N", REC_MAX + 1), q=("Q", Q_MAX + 1))
+GAMMA0 = 0.3             # V2 fresh init: softplus(gamma~) = 0.3
 
 
 # ---------------------------------------------------------------------------
@@ -266,11 +277,13 @@ class ICEOutput(nn.Module):
 class ICEPointer(nn.Module):
     """ICE-V / VR log-space pointer-sentinel over K candidate slots (see the module docstring). Candidate
     features (tok, ln, dist) are [B,T,K]; slot k has its own source id (order x occurrence, chain depth, anchor
-    key and span offset)."""
+    key and span offset). v2: the ICE-V2 scorer, with the slot features (delta, cnt, rec) [B,T,K] appended to the
+    inputs; groups = slot_groups(cand) and feats = the subset of "dnrq" whose tables are used."""
 
-    def __init__(self, d: int, n_slots: int, verify: bool = True):
+    def __init__(self, d: int, n_slots: int, verify: bool = True, v2: bool = False,
+                 groups: Optional[List[int]] = None, feats: str = "dnrq"):
         super().__init__()
-        self.K, self.verify = n_slots, verify
+        self.K, self.verify, self.v2 = n_slots, verify, v2
         self.norm = RMSNorm(d)
         self.w = nn.Linear(d, 1, bias=False)
         self.b = nn.Embedding(n_slots, 1)
@@ -281,12 +294,26 @@ class ICEPointer(nn.Module):
         nn.init.constant_(self.b.weight, -3.0)     # pi_k ~ 0.05 pi_0 per filled slot at init
         nn.init.zeros_(self.L.weight)
         nn.init.zeros_(self.D.weight)
-        if verify:
+        if v2:
+            assert groups is not None and len(groups) == n_slots and set(feats) <= set(V2_TABLES), (groups, feats)
+            self.feats = "".join(f for f in "dnrq" if f in feats)
+            self.n_groups = max(groups) + 1
+            self.register_buffer("group", torch.tensor(groups, dtype=torch.long), persistent=False)
+            for f in self.feats:
+                name, nb = V2_TABLES[f]
+                setattr(self, name, nn.Embedding(self.n_groups * nb, 1))
+                nn.init.zeros_(getattr(self, name).weight)            # V2 starts as the V scorer
+            if verify:   # gamma = softplus(gamma_t) >= 0; no beta
+                self.gamma_t = nn.Parameter(torch.full((n_slots,), math.log(math.expm1(GAMMA0))))
+        elif verify:
             self.gamma = nn.Parameter(torch.zeros(n_slots))
             self.beta = nn.Parameter(torch.zeros(1))
 
-    def log_pi(self, h_last, ell, keep, tok, ln, dist):
-        """ell = detached log_softmax(z) [B,T,V] -> log pi [B,T,1+K] (sentinel first; empty slots -inf)."""
+    def log_pi(self, h_last, ell, keep, tok, ln, dist, *v2f):
+        """ell = detached log_softmax(z) [B,T,V] -> log pi [B,T,1+K] (sentinel first; empty slots -inf).
+        v2f (V2 only): delta, cnt, rec [B,T,K]."""
+        if self.v2:
+            return self._log_pi_v2(h_last, ell, keep, tok, ln, dist, *v2f)
         src = torch.arange(self.K, device=tok.device)
         s = (self.b.weight[:, 0] + self.L(src * (MAX_MATCH + 1) + ln.clamp(0, MAX_MATCH)).squeeze(-1)
              + self.D(dist.clamp(max=V_DIST_MAX)).squeeze(-1)).float()                     # [B,T,K]
@@ -298,12 +325,42 @@ class ICEPointer(nn.Module):
         s = s.masked_fill(~valid, float("-inf"))
         return torch.cat([s0.unsqueeze(-1), s], dim=-1).log_softmax(-1), valid
 
-    def mix(self, z, h_last, keep, tok, ln, dist):
+    @staticmethod
+    def q_rank(ellk, tok):
+        """Rank of the backbone log-prob of each slot's token among the distinct slot tokens (0 = most likely),
+        clipped to Q_MAX: #distinct other tokens with a strictly larger log-prob. ellk, tok [B,T,K]."""
+        K = tok.shape[-1]
+        has = tok >= 0
+        same = (tok.unsqueeze(-1) == tok.unsqueeze(-2)) & has.unsqueeze(-2)          # [B,T,k,j]
+        tri = torch.ones(K, K, dtype=torch.bool, device=tok.device).tril(-1)          # j < k
+        first = has & ~(same & tri).any(-1)                                           # first slot of its token
+        above = first.unsqueeze(-2) & (ellk.unsqueeze(-2) > ellk.unsqueeze(-1))       # [B,T,k,j]
+        return above.sum(-1).clamp(max=Q_MAX)
+
+    def _log_pi_v2(self, h_last, ell, keep, tok, ln, dist, delta, cnt, rec):
+        src = torch.arange(self.K, device=tok.device)
+        s = (self.b.weight[:, 0] + self.L(src * (MAX_MATCH + 1) + ln.clamp(0, MAX_MATCH)).squeeze(-1)
+             + self.D(dist.clamp(max=V_DIST_MAX)).squeeze(-1)).float()                     # [B,T,K]
+        s0 = self.w(self.norm(h_last)).float().squeeze(-1) + self.c0.float()                # [B,T]
+        ellk = ell.gather(-1, tok.clamp(min=0))
+        if self.verify:
+            s = s + F.softplus(self.gamma_t.float()) * ellk.clamp(min=-20.0)
+        feat = dict(d=delta, n=cnt, r=rec)
+        if "q" in self.feats:
+            feat["q"] = self.q_rank(ellk, tok)
+        for f in self.feats:
+            name, nb = V2_TABLES[f]
+            s = s + getattr(self, name)(self.group * nb + feat[f]).squeeze(-1).float()
+        valid = (tok >= 0) & (keep > 0)[:, None, None]
+        s = s.masked_fill(~valid, float("-inf"))
+        return torch.cat([s0.unsqueeze(-1), s], dim=-1).log_softmax(-1), valid
+
+    def mix(self, z, h_last, keep, tok, ln, dist, *v2f):
         """Full log-mixture [B,T,V] (eval paths). Duplicate candidates: every slot of token c carries the
         logsumexp of all slots of c, so out[c] = logaddexp(log pi_0 + l[c], that) is the same for all of them
         (equal to adding them one after the other)."""
         ls = z.log_softmax(-1)
-        lp, valid = self.log_pi(h_last, ls.detach(), keep, tok, ln, dist)
+        lp, valid = self.log_pi(h_last, ls.detach(), keep, tok, ln, dist, *v2f)
         inplace = not (torch.is_grad_enabled() and ls.requires_grad)       # no grad: no extra [B,T,V] copy
         out = ls.add_(lp[..., :1]) if inplace else ls + lp[..., :1]
         idx = tok.clamp(min=0)
@@ -318,16 +375,30 @@ class ICEPointer(nn.Module):
         later = (same & torch.ones(self.K, self.K, dtype=torch.bool, device=idx.device).tril(-1)).any(-1)
         return out.scatter(-1, idx, torch.where(later, new.detach(), new))
 
-    def loss_sum(self, z, h_last, labels, keep, tok, ln, dist, aux: float):
-        """Training loss summed over the tokens: -log p_mix(y) + aux * CE(z, y), only gathers (no mixture
-        over the vocabulary)."""
+    def loss_sum(self, z, h_last, labels, keep, tok, ln, dist, *v2f, aux: float, listwise: float = 0.0):
+        """Training loss summed over the tokens: -log p_mix(y) + aux * CE(z, y) (+ the listwise slot term), only
+        gathers (no mixture over the vocabulary)."""
         ls = z.log_softmax(-1)
-        lp, valid = self.log_pi(h_last, ls.detach(), keep, tok, ln, dist)
+        lp, valid = self.log_pi(h_last, ls.detach(), keep, tok, ln, dist, *v2f)
         y = labels.clamp(min=0)
         ly = ls.gather(-1, y.unsqueeze(-1)).squeeze(-1)                     # [B,T]
-        hit = torch.where(valid & (tok == y.unsqueeze(-1)), lp[..., 1:], _NEG).logsumexp(-1)
+        is_y = valid & (tok == y.unsqueeze(-1))
+        hit = torch.where(is_y, lp[..., 1:], _NEG).logsumexp(-1)
         nll = -torch.logaddexp(lp[..., 0] + ly, hit) - aux * ly
+        if listwise:
+            nll = nll + listwise * self.listwise_nll(lp, valid, tok, is_y, hit)
         return nll[labels != -100].sum()
+
+    @staticmethod
+    def listwise_nll(lp, valid, tok, is_y, hit):
+        """-log sum_{c_k = y} softmax_{valid slots}(s)_k where y is in the slots and they hold >= 2 distinct tokens,
+        else 0 [B,T]. lp = log pi (the sentinel's share cancels), hit = logsumexp of log pi over the y slots."""
+        same_before = (tok.unsqueeze(-1) == tok.unsqueeze(-2)) & valid.unsqueeze(-2) & torch.ones(
+            tok.shape[-1], tok.shape[-1], dtype=torch.bool, device=tok.device).tril(-1)
+        n_distinct = (valid & ~same_before.any(-1)).sum(-1)
+        on = is_y.any(-1) & (n_distinct >= 2)
+        all_ = torch.where(valid, lp[..., 1:], _NEG).logsumexp(-1)
+        return torch.where(on, all_ - hit, torch.zeros_like(hit))
 
 
 # ---------------------------------------------------------------------------
@@ -373,8 +444,11 @@ class ICELM(nn.Module):
         use_in = cfg.ice_v_input if cfg.ice_v else cfg.ice_input       # ICE-V: no input side unless asked
         self.ice_in = ICEInput(cfg.d_model, n_orders, cfg.ice_trust) if (cfg.ice and use_in) else None
         self.ice_out = ICEOutput(cfg.d_model, cfg.ice_trust) if (cfg.ice and cfg.ice_output and not cfg.ice_v) else None
-        self.ice_ptr = (ICEPointer(cfg.d_model, n_slots(cfg.ice_v, n_orders), cfg.ice_v_verify)
-                        if (cfg.ice and cfg.ice_v) else None)
+        if cfg.ice and cfg.ice_v:
+            v2 = dict(v2=True, groups=slot_groups(cfg.ice_v, n_orders), feats=cfg.ice_v2_feats) if cfg.ice_v2 else {}
+            self.ice_ptr = ICEPointer(cfg.d_model, n_slots(cfg.ice_v, n_orders), cfg.ice_v_verify, **v2)
+        else:
+            self.ice_ptr = None
         self._init_weights()
 
     def _init_weights(self):
@@ -420,7 +494,8 @@ class ICELM(nn.Module):
     def _out_feats(self, ice):
         """Output-side ICE features, each [B,T] or [B,T,K] (time second, so they can be sliced like h_last)."""
         if self.ice_ptr is not None:
-            return tuple(ice[k].transpose(1, 2) for k in V_KEYS)            # [B,K,T] -> [B,T,K]
+            keys = V_KEYS + (V2_KEYS if self.ice_ptr.v2 else ())
+            return tuple(ice[k].transpose(1, 2) for k in keys)              # [B,K,T] -> [B,T,K]
         return tuple(ice.get(k) for k in OUT_KEYS) if self.ice_out is not None else (None,) * len(OUT_KEYS)
 
     # -- inference cache -------------------------------------------------------
@@ -525,6 +600,6 @@ class ICELM(nn.Module):
         if self.ice_ptr is not None:
             w = self.embed.weight if self.lm_head is None else self.lm_head.weight
             return self.ice_ptr.loss_sum(F.linear(h_last, w).float(), h_last, labels, keep, *star,
-                                         aux=self.cfg.ice_v_aux)
+                                         aux=self.cfg.ice_v_aux, listwise=self.cfg.ice_v_listwise)
         logits = self._logits(h_last, keep, *star)
         return F.cross_entropy(logits.reshape(-1, logits.size(-1)), labels.reshape(-1), reduction="sum")
