@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ICE GStar Slides</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+  :root {
+    --ink: #14213D; --ink-2: #4A5568; --muted: #6A7280;
+    --line: #DDE2EA; --card: #FFFFFF; --bg1: #FBFBF8; --bg2: #F3F5F8;
+    --blue: #1F5FBF; --blue-soft: #EAF1FB; --orange: #B4441A; --orange-soft: #FFF3EC; --gray-bar: #9AA5B5;
+    --serif: 'Source Serif 4', Georgia, serif; --sans: 'IBM Plex Sans', Arial, sans-serif; --mono: 'IBM Plex Mono', 'Courier New', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: #1B1F27; overflow: hidden; }
+  .stage { position: fixed; left: 50%; top: 50%; width: 1920px; height: 1080px; transform-origin: 0 0; }
+  .slide { position: absolute; inset: 0; display: none; flex-direction: column; gap: 28px; padding: 64px 120px 120px;
+           color: var(--ink); font-family: var(--sans); }
+  .slide.on { display: flex; }
+  .kicker { font-size: 24px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--blue); }
+  h1 { font-family: var(--serif); font-size: 68px; font-weight: 600; line-height: 1.08; }
+  h2 { font-family: var(--serif); font-size: 58px; font-weight: 600; line-height: 1.1; }
+  .lede { font-size: 31px; line-height: 1.4; color: var(--ink-2); max-width: 1640px; }
+  .lede b { color: var(--ink); }
+  .foot { position: absolute; left: 120px; right: 120px; bottom: 48px; font-size: 22px; color: var(--muted); }
+  .num { position: absolute; right: 120px; bottom: 48px; font-size: 22px; color: var(--muted); }
+
+  /* slide 1: pipeline */
+  .flow { display: flex; align-items: stretch; gap: 18px; }
+  .step { flex: 1; display: flex; flex-direction: column; gap: 12px; background: var(--card); padding: 28px;
+          border: 1px solid var(--line); border-radius: 16px; }
+  .step.hi { background: var(--blue-soft); border: 2px solid var(--blue); }
+  .step .tag { font-size: 20px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); }
+  .step.hi .tag { color: var(--blue); }
+  .step h3 { font-size: 28px; font-weight: 600; line-height: 1.2; }
+  .step p { font-size: 24px; line-height: 1.4; color: var(--ink-2); }
+  .step .code { font-family: var(--mono); font-size: 25px; line-height: 1.5; color: var(--ink); background: var(--bg2);
+                border-radius: 8px; padding: 10px 14px; }
+  .step .code em { font-style: normal; color: var(--blue); font-weight: 600; }
+  .arrow { align-self: center; width: 0; height: 0; border-top: 14px solid transparent; border-bottom: 14px solid transparent;
+           border-left: 22px solid var(--gray-bar); flex: none; }
+  .review { display: flex; gap: 18px; }
+  .review .r { flex: 1; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px 24px; }
+  .review .q { font-size: 21px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+  .review .a { font-size: 25px; line-height: 1.35; margin-top: 6px; }
+  .note { font-size: 29px; line-height: 1.4; }
+
+  /* slide 2: scoreboard + tiles */
+  .row { display: flex; gap: 32px; align-items: stretch; }
+  .board { flex: 1.3; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 32px 36px;
+           display: flex; flex-direction: column; gap: 6px; }
+  .board table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  .board th { font-size: 21px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--muted);
+              text-align: left; white-space: nowrap; padding: 0 12px 14px 0; border-bottom: 1px solid var(--line); }
+  .board th.n, .board td.n { text-align: right; }
+  .board td { font-size: 29px; padding: 20px 12px 20px 0; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  .board tr:last-child td { border-bottom: none; }
+  .board td .sub { display: block; font-size: 21px; color: var(--muted); margin-top: 2px; }
+  .board tr.win td { color: var(--blue); }
+  .board tr.win td.name { font-weight: 600; }
+  .board tr.win td.n { font-weight: 600; }
+  .mem { display: flex; align-items: center; gap: 12px; }
+  .mem .bar { height: 18px; border-radius: 0 4px 4px 0; background: var(--gray-bar); }
+  .board tr.win .mem .bar { background: var(--blue); }
+  .mem .v { font-size: 25px; white-space: nowrap; }
+  .board .cap { font-size: 21px; color: var(--muted); margin-top: 10px; }
+  .tiles { flex: 1; display: flex; flex-direction: column; gap: 20px; }
+  .tile { flex: 1; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 22px 28px;
+          display: flex; align-items: center; gap: 26px; }
+  .tile .big { font-family: var(--serif); font-size: 52px; font-weight: 600; color: var(--blue); min-width: 230px; line-height: 1; white-space: nowrap; }
+  .tile .t { font-size: 26px; font-weight: 600; line-height: 1.25; }
+  .tile .d { font-size: 22px; line-height: 1.35; color: var(--ink-2); margin-top: 4px; }
+  .limits { background: var(--orange-soft); border-left: 6px solid var(--orange); border-radius: 12px; padding: 24px 32px;
+            display: flex; gap: 48px; }
+  .limits .col { flex: 1; }
+  .limits h3 { font-size: 26px; font-weight: 600; color: var(--orange); margin-bottom: 8px; letter-spacing: 1px; text-transform: uppercase; }
+  .limits p { font-size: 25px; line-height: 1.4; }
+  .limits .next h3 { color: var(--ink); }
+
+  .hint { position: fixed; right: 16px; bottom: 12px; font: 13px var(--sans); color: #8A93A3; }
+  @media print {
+    @page { size: 1920px 1080px; margin: 0; }
+    html, body { overflow: visible; background: none; height: auto; }
+    .stage { position: static; transform: none !important; height: auto; }
+    .slide { position: relative; display: flex !important; width: 1920px; height: 1080px; break-after: page; }
+    .hint { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+
+<!-- ============ Slide 1: problem + method ============ -->
+<section class="slide on" style="background:var(--bg1)">
+  <div style="display:flex;flex-direction:column;gap:20px">
+    <p class="kicker">GStar project update · [Your name]</p>
+    <h1>ICE: exact memory for language models without attention</h1>
+    <p class="lede">Recurrent LMs (Gated DeltaNet) are cheap: their memory has a <b>fixed size</b>. But they forget exact details,
+      like a config value seen 2,000 tokens ago. Hybrids add attention back, and its cache <b>grows with every token</b>.</p>
+  </div>
+
+  <div class="flow">
+    <div class="step">
+      <span class="tag">1 · Context</span>
+      <div class="code">port = 8000<br>…2,000 tokens…<br>port = <em>?</em></div>
+    </div>
+    <div class="arrow"></div>
+    <div class="step">
+      <span class="tag">2 · Exact lookup</span>
+      <h3>“Where did this phrase appear before? What came next?”</h3>
+      <p>Hash table on token IDs, on the CPU. Proposes up to 34 candidates.</p>
+    </div>
+    <div class="arrow"></div>
+    <div class="step hi">
+      <span class="tag">3 · Verifier (new)</span>
+      <h3>The model checks each candidate against its own guess</h3>
+      <p>A wrong candidate can be ignored. Only 2.7K parameters.</p>
+    </div>
+    <div class="arrow"></div>
+    <div class="step">
+      <span class="tag">4 · Next token</span>
+      <div class="code"><em>8000</em></div>
+      <p>No attention layer anywhere in the model.</p>
+    </div>
+  </div>
+
+  <p class="note"><b>Key change since the review:</b> the lookup only <b>proposes</b>; the model <b>decides</b>. The lookup never feeds into the network itself.</p>
+
+  <div class="review">
+    <div class="r"><p class="q">Reviewers asked</p><p class="a"><b>Misleading lookups?</b><br>Measured loss where the lookup is wrong</p></div>
+    <div class="r"><p class="q">Reviewers asked</p><p class="a"><b>Over-reliance?</b><br>Same model with ICE switched off</p></div>
+    <div class="r"><p class="q">Reviewers asked</p><p class="a"><b>Real cost?</b><br>Memory and decode speed on H100</p></div>
+    <div class="r"><p class="q">Reviewers asked</p><p class="a"><b>Code use case?</b><br>CodeRecall benchmark + held-out code</p></div>
+  </div>
+
+  <p class="foot">140M parameters · 200M training tokens · Modal H100 · TinyLlama tokenizer</p>
+  <p class="num">1 / 2</p>
+</section>
+
+<!-- ============ Slide 2: results ============ -->
+<section class="slide" style="background:var(--bg2);gap:30px">
+  <h2>Without any attention, ICE beats the attention hybrid, with 12× less memory</h2>
+
+  <div class="row">
+    <div class="board">
+      <table>
+        <thead><tr><th>Model</th><th>Cache per token</th><th class="n">Code loss</th><th class="n">Text loss</th></tr></thead>
+        <tbody>
+          <tr><td class="name">Recurrent only<span class="sub">16 Gated DeltaNet layers</span></td>
+              <td><div class="mem"><div class="bar" style="width:2px"></div><span class="v">0 B</span></div></td>
+              <td class="n">1.899</td><td class="n">3.444</td></tr>
+          <tr><td class="name">Hybrid with attention<span class="sub">7 recurrent : 1 attention</span></td>
+              <td><div class="mem"><div class="bar" style="width:240px"></div><span class="v">2,048 B</span></div></td>
+              <td class="n">1.730</td><td class="n">3.384</td></tr>
+          <tr class="win"><td class="name">Recurrent + ICE<span class="sub">lookup + verifier</span></td>
+              <td><div class="mem"><div class="bar" style="width:10px"></div><span class="v">65 B</span></div></td>
+              <td class="n">1.690</td><td class="n">3.324</td></tr>
+        </tbody>
+      </table>
+      <p class="cap">Held-out loss in nats, lower is better · 500 windows of 4K tokens · bar length = bytes per token</p>
+    </div>
+
+    <div class="tiles">
+      <div class="tile"><span class="big">12×</span>
+        <div><p class="t">less memory per sequence</p><p class="d">5.5 vs 66.8 MiB at 32K tokens. Decoding is 9% slower (Python index).</p></div></div>
+      <div class="tile"><span class="big">2 seeds</span>
+        <div><p class="t">same win both times</p><p class="d">Code loss −0.040 and −0.045 vs the hybrid. Seed noise ≈ 0.004.</p></div></div>
+      <div class="tile"><span class="big">0.19 → 0</span>
+        <div><p class="t">harm from wrong lookups</p><p class="d">Old ICE vs new, measured where the lookup is wrong.</p></div></div>
+    </div>
+  </div>
+
+  <div class="limits">
+    <div class="col">
+      <h3>Still weak</h3>
+      <p><b>Conflicting values</b> (a variable updated later, two similar objects): it picks the wrong one, no better than the hybrid.
+        <b>Reliance:</b> switched off, it is 0.14 worse than recurrent-only (old ICE: 0.43).</p>
+    </div>
+    <div class="col next">
+      <h3>Next</h3>
+      <p>An attention baseline with the same memory budget · a verifier that compares candidates (ICE-V2) · a real pretrained model (Mamba2-370M vs Pythia-410M).</p>
+    </div>
+  </div>
+
+  <p class="foot">140M parameters · 200M training tokens · H100 · held-out code + FineWeb-Edu · hybrid = same model with 2 of 16 layers as attention</p>
+  <p class="num">2 / 2</p>
+</section>
+
+</div>
+<p class="hint">← → to switch slides · print to PDF for the shared deck</p>
+<script>
+  const slides = [...document.querySelectorAll('.slide')];
+  let i = 0;
+  const show = k => { i = Math.max(0, Math.min(slides.length - 1, k)); slides.forEach((s, j) => s.classList.toggle('on', j === i)); };
+  const fit = () => {
+    const s = Math.min(innerWidth / 1920, innerHeight / 1080);
+    document.getElementById('stage').style.transform = `scale(${s}) translate(-50%, -50%)`;
+  };
+  addEventListener('resize', fit); fit();
+  if (location.hash === '#2') show(1);
+  addEventListener('keydown', e => {
+    if (['ArrowRight', 'PageDown', ' '].includes(e.key)) show(i + 1);
+    if (['ArrowLeft', 'PageUp'].includes(e.key)) show(i - 1);
+  });
+  addEventListener('click', e => show(e.clientX > innerWidth / 2 ? i + 1 : i - 1));
+</script>
+</body>
+</html>
