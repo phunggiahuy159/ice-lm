@@ -51,8 +51,9 @@ it runs in the background (up to 12 h) and keeps the outputs. Expect roughly 8-1
 order, and no new job starts after `MAX_HOURS`.
 
 **Inputs (pick one):**
-* **Modal (default):** *Add-ons → Secrets*: add `MODAL_TOKEN_ID` and `MODAL_TOKEN_SECRET` (workspace
-  tien-phat140205) and attach them to this notebook. The notebook downloads the checkpoints and data from the
+* **Modal (default):** in the notebook editor, *Add-ons → Secrets → Add a new secret*: label `MODAL_TOKEN_ID`,
+  then `MODAL_TOKEN_SECRET` (workspace tien-phat140205). **Tick the checkbox next to each secret** so it is attached
+  to *this* notebook (a secret that exists but is not attached gives "No user secrets exist for kernel id ..."). The notebook downloads the checkpoints and data from the
   `ice-lm` volume (read only; size- and CRC-checked) and uploads its results to `kaggle_results/latest` on that
   volume. No Modal compute is used.
 * **Kaggle dataset:** upload a dataset holding `runs/<name>/config.json` + `model_final.pt` for t200_B, t200_G,
@@ -112,7 +113,7 @@ import os, io, tarfile, shutil
 BUNDLE = "{b64}"
 shutil.rmtree(CODE, ignore_errors=True)
 with tarfile.open(fileobj=io.BytesIO(base64.b64decode(BUNDLE)), mode="r:gz") as tf:
-    tf.extractall(WORK)
+    tf.extractall(WORK, **({{"filter": "data"}} if hasattr(tarfile, "data_filter") else {{}}))
 print("code at", CODE, "| commit {commit}")
 """)
 
@@ -137,16 +138,31 @@ USE_MODAL = ds is None
 if SOURCE == "dataset" and ds is None:
     raise RuntimeError("SOURCE='dataset' but no attached dataset has data/meta.json")
 if USE_MODAL or UPLOAD_TO_MODAL:
-    try:
+    def kaggle_secret(label):
+        # the env var if already set, else a Kaggle secret under the label or its lower-case spelling
+        if os.environ.get(label):
+            return os.environ[label]
         from kaggle_secrets import UserSecretsClient
         sec = UserSecretsClient()
-        os.environ["MODAL_TOKEN_ID"] = sec.get_secret("MODAL_TOKEN_ID")
-        os.environ["MODAL_TOKEN_SECRET"] = sec.get_secret("MODAL_TOKEN_SECRET")
+        for name in (label, label.lower()):
+            try:
+                return sec.get_secret(name)
+            except Exception as e:
+                err = e
+        raise RuntimeError(f"secret {label} not attached ({type(err).__name__}: {err})")
+    try:
+        for label in ("MODAL_TOKEN_ID", "MODAL_TOKEN_SECRET"):
+            os.environ[label] = kaggle_secret(label).strip()
         sh("pip install -q modal", check=False)
+        if sh("modal volume ls ice-lm", check=False).returncode:     # fail now, not after an hour of downloads
+            raise RuntimeError("the Modal token cannot list the ice-lm volume (wrong token or workspace?)")
     except Exception as e:   # no secrets: only the dataset route works, and results stay on Kaggle
-        print("Modal secrets not available:", type(e).__name__, e)
+        print("Modal secrets not available:", e)
         if USE_MODAL:
-            raise RuntimeError("attach the MODAL_TOKEN_ID / MODAL_TOKEN_SECRET secrets or a dataset (see top)")
+            raise RuntimeError(
+                "No Modal token and no dataset. In the notebook editor: Add-ons -> Secrets -> add MODAL_TOKEN_ID and "
+                "MODAL_TOKEN_SECRET (exact labels) and tick the box next to each so it is attached to THIS notebook; "
+                "then Save Version again. Or attach a dataset (see the top cell).") from None
         UPLOAD_TO_MODAL = False
 
 def remote_size(rel):
