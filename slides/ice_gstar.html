@@ -40,10 +40,10 @@
   .step .code em { font-style: normal; color: var(--blue); font-weight: 600; }
   .arrow { align-self: center; width: 0; height: 0; border-top: 14px solid transparent; border-bottom: 14px solid transparent;
            border-left: 22px solid var(--gray-bar); flex: none; }
-  .review { display: flex; gap: 18px; }
-  .review .r { flex: 1; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px 24px; }
-  .review .q { font-size: 21px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
-  .review .a { font-size: 25px; line-height: 1.35; margin-top: 6px; }
+  .models { display: flex; gap: 18px; }
+  .models .r { flex: 1; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px 24px; }
+  .models .q { font-size: 21px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+  .models .a { font-size: 25px; line-height: 1.35; margin-top: 6px; }
   .note { font-size: 29px; line-height: 1.4; }
 
   /* slide 2: scoreboard + tiles */
@@ -54,8 +54,10 @@
   .board th { font-size: 21px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--muted);
               text-align: left; white-space: nowrap; padding: 0 12px 10px 0; border-bottom: 1px solid var(--line); }
   .board th.n, .board td.n { text-align: right; }
-  .board td { font-size: 28px; padding: 10px 12px 10px 0; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  .board td { font-size: 30px; padding: 16px 12px 16px 0; border-bottom: 1px solid var(--line); vertical-align: middle; }
   .board tr:last-child td { border-bottom: none; }
+  .board th .sub { display: block; font-size: 19px; font-weight: 400; color: var(--muted); margin-top: 2px; }
+  .board td.name { white-space: nowrap; }
   .board td .sub { display: block; font-size: 21px; color: var(--muted); margin-top: 2px; }
   .board tr.win td { color: var(--blue); }
   .board tr.win td.name { font-weight: 600; }
@@ -96,9 +98,9 @@
 <div class="stage" id="stage">
 
 <!-- ============ Slide 1: problem + method ============ -->
-<section class="slide on" style="background:var(--bg1)">
+<section class="slide on" style="background:var(--bg1);gap:44px">
   <div style="display:flex;flex-direction:column;gap:20px">
-    <p class="kicker">GStar project update · [Your name]</p>
+    <p class="kicker">GStar project · [Your name]</p>
     <h1>ICE: exact memory for language models without attention</h1>
     <p class="lede">Recurrent LMs (Gated DeltaNet) are cheap: their memory has a <b>fixed size</b>. But they forget exact details,
       like a config value seen 2,000 tokens ago. Hybrids add attention back, and its cache <b>grows with every token</b>.</p>
@@ -117,9 +119,9 @@
     </div>
     <div class="arrow"></div>
     <div class="step hi">
-      <span class="tag">3 · Verifier (new)</span>
-      <h3>The model checks each candidate against its own guess</h3>
-      <p>A wrong candidate is down-weighted, not ignored. Only 2.7K parameters.</p>
+      <span class="tag">3 · Verifier</span>
+      <h3>Weighs each candidate against the model’s own prediction</h3>
+      <p>Learned: a candidate the model finds implausible gets little weight. 2.7K parameters.</p>
     </div>
     <div class="arrow"></div>
     <div class="step">
@@ -129,66 +131,64 @@
     </div>
   </div>
 
-  <p class="note"><b>Key change since the review:</b> the lookup only <b>proposes</b>; the model <b>decides</b>. The lookup never feeds into the network itself.</p>
-
-  <div class="review">
-    <div class="r"><p class="q">Reviewers asked</p><p class="a"><b>Misleading lookups?</b><br>Measured loss where the lookup is wrong</p></div>
-    <div class="r"><p class="q">Reviewers asked</p><p class="a"><b>Over-reliance?</b><br>Same model with ICE switched off</p></div>
-    <div class="r"><p class="q">Reviewers asked</p><p class="a"><b>Real cost?</b><br>Total memory, lookup table included, and decode speed (H100)</p></div>
-    <div class="r"><p class="q">Reviewers asked</p><p class="a"><b>Code use case?</b><br>CodeRecall benchmark + held-out code</p></div>
+  <div class="models">
+    <div class="r"><p class="q">Baseline</p><p class="a"><b>Recurrent only</b><br>16 Gated DeltaNet layers · cache 0 B per token</p></div>
+    <div class="r"><p class="q">Baseline</p><p class="a"><b>Hybrid with attention</b><br>14 recurrent + 2 attention layers · KV cache 2,048 B per token</p></div>
+    <div class="r" style="border:2px solid var(--blue);background:var(--blue-soft)"><p class="q" style="color:var(--blue)">Ours</p><p class="a"><b>Recurrent + ICE</b><br>16 recurrent layers + lookup · table 65–90 B per token</p></div>
   </div>
 
-  <p class="foot">140M parameters · 200M training tokens (short: 1.4 per parameter) · Modal H100 · TinyLlama tokenizer</p>
+  <p class="foot">All models: 140M parameters · same 200M training tokens (FineWeb-Edu + CodeParrot Python) · 4K context · H100</p>
   <p class="num">1 / 2</p>
 </section>
 
 <!-- ============ Slide 2: results ============ -->
-<section class="slide" style="background:var(--bg2);gap:18px;padding-top:56px">
-  <h2 style="font-size:46px">Without attention, ICE beats the hybrid at equal training, with a third of its memory</h2>
+<section class="slide" style="background:var(--bg2);gap:30px;padding-top:56px">
+  <h2 style="font-size:46px">Without attention, ICE beats the hybrid, with a third of its memory</h2>
 
   <div class="board">
     <table>
-      <thead><tr><th>Model</th><th>Cache per token</th><th class="n">Code loss</th><th class="n">Text loss</th>
-        <th class="n">Code top-1</th><th class="n">Top-1, copies &gt;512 back</th></tr></thead>
+      <thead><tr><th>Model</th><th>Cache per token</th><th class="n">Perplexity<span class="sub" style="text-transform:none;letter-spacing:0">CodeParrot (Python)</span></th>
+        <th class="n">Perplexity<span class="sub" style="text-transform:none;letter-spacing:0">FineWeb-Edu (text)</span></th>
+        <th class="n">Phone-book lookup<span class="sub" style="text-transform:none;letter-spacing:0">exact match, 4K</span></th>
+        <th class="n">Needle in a haystack<span class="sub" style="text-transform:none;letter-spacing:0">exact match, 4K</span></th></tr></thead>
       <tbody>
-        <tr><td class="name">Recurrent only<span class="sub">16 Gated DeltaNet layers</span></td>
+        <tr><td class="name">Recurrent only</td>
             <td><div class="mem"><div class="bar" style="width:2px"></div><span class="v">0 B</span></div></td>
-            <td class="n">1.899</td><td class="n">3.444</td><td class="n">62.4%</td><td class="n">64.6%</td></tr>
-        <tr><td class="name">Hybrid with attention<span class="sub">7 recurrent : 1 attention</span></td>
+            <td class="n">6.68</td><td class="n">31.3</td><td class="n">0%</td><td class="n">0%</td></tr>
+        <tr><td class="name">Hybrid with attention</td>
             <td><div class="mem"><div class="bar" style="width:260px"></div><span class="v">2,048 B</span></div></td>
-            <td class="n">1.730</td><td class="n">3.384</td><td class="n">66.1%</td><td class="n">76.2%</td></tr>
-        <tr class="win"><td class="name">Recurrent + ICE<span class="sub">lookup + verifier</span></td>
-            <td><div class="mem"><div class="bar" style="width:9px"></div><span class="v">65–90 B</span></div></td>
-            <td class="n">1.690</td><td class="n">3.324</td><td class="n">66.5%</td><td class="n">80.8%</td></tr>
+            <td class="n">5.64</td><td class="n">29.5</td><td class="n">0%</td><td class="n">0%</td></tr>
+        <tr class="win"><td class="name">Recurrent + ICE</td>
+            <td><div class="mem"><div class="bar" style="width:11px"></div><span class="v">65–90 B</span></div></td>
+            <td class="n">5.42</td><td class="n">27.8</td><td class="n">82%</td><td class="n">64%</td></tr>
       </tbody>
     </table>
-    <p class="cap">Held-out, 500 × 4K-token windows · loss in nats, lower is better · top-1 = next token exactly right ·
-      perplexity vs the hybrid: <b>−4% code</b> (5.64 → 5.42), <b>−6% text</b> (29.5 → 27.8)</p>
-    <p class="key">On code, <b>88%</b> of what attention adds to the recurrent model is on tokens the lookup already predicts.</p>
+    <p class="cap">Perplexity: held-out, 500 windows of 4K tokens, lower is better (<b>−4% code, −6% text</b> vs the hybrid) ·
+      Phone-book (Jelassi et al., 2024) and needle-in-a-haystack: whole answer exactly right, 50 items each</p>
   </div>
 
   <div class="tiles">
     <div class="tile"><span class="big">2.8×</span>
-      <div><p class="t">less memory at 4K tokens</p><p class="d">3.8 vs 10.8 MiB per sequence, measured. Grows 65–90 vs 2,048 B per token (11× less at 32K). Decoding 9% slower (Python index).</p></div></div>
+      <div><p class="t">less memory than the hybrid</p><p class="d">3.8 vs 10.8 MiB per sequence at 4K, measured (11× at 32K). Decoding 9% slower.</p></div></div>
+    <div class="tile"><span class="big">88%</span>
+      <div><p class="t">of what attention adds is exact copying</p><p class="d">Attention’s gain over the recurrent model falls on tokens the lookup already predicts.</p></div></div>
     <div class="tile"><span class="big">2 seeds</span>
-      <div><p class="t">same win, but shrinking</p><p class="d">Code −0.040 / −0.045. The lead fell from 0.12 to 0.04 over the last third of training; a 3× longer run is next.</p></div></div>
-    <div class="tile"><span class="big">0.19 → 0</span>
-      <div><p class="t">loss harm from wrong lookups</p><p class="d">Old ICE vs new, against no lookup. The hybrid is still 0.04 better on these tokens.</p></div></div>
+      <div><p class="t">same result</p><p class="d">Code perplexity better than the hybrid in both training seeds.</p></div></div>
   </div>
 
   <div class="limits">
     <div class="col">
-      <h3>Still weak</h3>
-      <p><b>Conflicts</b> (an updated variable, two similar objects): ICE confidently copies the wrong occurrence. With an old
-        version of a file in context, it copies the old name 65% of the time (hybrid 13%). <b>ICE off:</b> 0.14 worse than recurrent-only.</p>
+      <h3>Limitations</h3>
+      <p><b>Changed values:</b> with an old version of a file in context, ICE copies the old name 65% of the time (hybrid 13%).
+        <b>Short training:</b> the lead over the hybrid narrows as training goes on.</p>
     </div>
     <div class="col next">
       <h3>Next</h3>
-      <p>3× longer training · same-memory attention layer · line-completion exact match · a real pretrained model.</p>
+      <p>3× longer training · pretrained models · better handling of conflicting values.</p>
     </div>
   </div>
 
-  <p class="foot">140M parameters · 200M training tokens · H100 · held-out code + FineWeb-Edu · hybrid = same model with 2 of 16 layers as attention</p>
+  <p class="foot">140M parameters · 200M training tokens · H100 · hybrid = the same model with 2 of 16 layers as attention</p>
   <p class="num">2 / 2</p>
 </section>
 

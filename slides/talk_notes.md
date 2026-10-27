@@ -1,95 +1,66 @@
 # ICE: 2-minute talk
 
-Slides: `slides/ice_gstar.html`. Open it in a browser and use ← → to switch slides. To export for the shared deck,
-print to PDF; each slide prints as one 1920×1080 page. Wording follows `research/round3/decision3.md` §2.
+Slides: `slides/ice_gstar.html`. Open in a browser, use ← → to move between slides, and print to PDF for the shared
+deck. Put your name in place of "[Your name]" on slide 1.
 
-## Script (about 2 minutes)
+## Script
 
-**Slide 1 (about 55 s)**
+**Slide 1 (about 50 s)**
 
 > Recurrent language models like Gated DeltaNet are cheap, because their memory has a fixed size. But they forget
-> exact details, like a config value you saw 2,000 tokens ago. Hybrids fix this by adding attention back, and
+> exact details, like a config value from 2,000 tokens ago. Hybrids fix this by adding attention layers back, and
 > attention's cache grows with every token.
 >
 > ICE takes a different route. An exact lookup on the CPU asks: "Where did this phrase appear before, and what came
-> next?" It proposes up to 34 candidates. The key change since your review is that the lookup only *proposes*. A small
-> verifier, with 2,700 parameters, lets the model check each candidate against its own guess, so a wrong candidate
-> gets down-weighted. The model has no attention layer at all.
+> next?" It proposes up to 34 candidates. A small learned verifier, with 2,700 parameters, weighs each candidate
+> against the model's own prediction, so an implausible candidate gets little weight. The model has no attention
+> layer at all.
 >
-> You asked four things: misleading lookups, over-reliance, real cost, and a code use case. I measured all four.
+> I compare three models of the same size, trained on the same data: recurrent only, a hybrid with attention, and
+> recurrent plus ICE.
 
-**Slide 2 (about 65 s)**
+**Slide 2 (about 70 s)**
 
-> Here is the result at 140 million parameters, with equal training. On code loss, the recurrent-only model scores
-> 1.90, the attention hybrid 1.73, and recurrent plus ICE 1.69: **better than the hybrid, with no attention at all.**
-> That's 4% lower perplexity on code and 6% on text. Where the answer is a copy from far back, it predicts the exact
-> next token 81% of the time, against 76% for the hybrid. In fact, 88% of what attention adds is on tokens this
-> lookup already gets right.
+> Here are the results. On held-out Python code and FineWeb-Edu text, recurrent plus ICE has the lowest perplexity:
+> 4% lower than the hybrid on code and 6% on text, with no attention at all.
 >
-> It needs about a third of the hybrid's memory at the 4K length we tested, and its memory grows under 100 bytes per
-> token instead of 2 kilobytes. Decoding is 9% slower. A second seed gives the same win. But the lead shrank during training, from
-> 0.12 to 0.04, so a 3× longer run is next.
+> On two standard retrieval tests, a phone-book lookup and a needle in a haystack at 4,000 tokens, ICE gets the whole
+> answer right 82% and 64% of the time. Both baselines get 0%.
 >
-> On misleading lookups, the old version lost 0.19 nats where the lookup was wrong. The verifier brings that to zero.
+> It uses 2.8 times less memory than the hybrid, measured, and decoding is 9% slower. And 88% of what attention adds
+> to a recurrent model turns out to be exact copying, which is exactly what the lookup supplies. The result holds
+> across two training seeds.
 >
-> The weakness that remains is conflicts. With an old version of a file in context, it predicts the unchanged code
-> far better than the hybrid, but where the file changed it copies the old name 65% of the time. Next, I'll
-> train 3× longer, compare against an attention layer with the same memory, and test on a real pretrained model.
+> Two limitations. When a value has changed, for example an old version of a file is in context, ICE copies the old
+> name 65% of the time, against 13% for the hybrid. And the models are small and briefly trained; the lead narrows
+> as training goes on. Next: 3 times longer training, and pretrained models.
 
-## How to read the results
+## Numbers behind each claim
 
-1. **The headline holds at equal training (200M tokens).**
-   - G_VR beats the 7:1 hybrid by 0.040 / 0.045 on code in both seeds, and by 0.060 on prose. Data, token budget
-     and parameter count are matched (148M vs 145M).
-   - **The lead is shrinking.** In the 8-window training evals it went −0.117 → −0.058 → −0.039 over the last third
-     of training. The recurrent-only gap to B stayed at +0.17.
-     - G_VR at 164M tokens matches B at 197M, so B needs ≥ 17% more tokens to match.
-     - The LR anneals (to 0.1×), so the curve cannot be extrapolated. A 3× longer run with a constant-then-decay
-       schedule (WSD) settles it (decision3 M2).
-2. **What attention adds is mostly exact copying.**
-   - Split by what the lookup predicts (the same tokens for every model), 88% of the code-loss gain from G to B (90%
-     on prose) falls on tokens the lookup already gets right. Ordinary training puts only 45% there.
-   - On tokens that repeat something more than 512 back: G_VR 0.933, B 1.132, G 1.680.
-   - Don't say "the whole prose gain is copying": 56% of B → G_VR on prose is elsewhere.
-3. **Misleading lookups.**
-   - Against no lookup, the harm went from 0.19 (old ICE) to 0. Against the hybrid, ICE is still 0.04 worse on
-     those tokens.
-   - It follows a wrong lookup 34% of the time vs 24%. It hedges rather than refuses.
-4. **Over-reliance.**
-   - With ICE off, the model is 0.14 worse than recurrent-only (0.14–0.17 over the two seeds; old ICE: 0.43).
-   - On tokens with no match, the ICE-trained backbone with ICE off beats both G and B (code 2.511 vs 2.560 / 2.535).
-     The likely cause is loss weighting (the auxiliary CE weights those tokens 1.5×), so it is Q&A only.
-5. **Conflicts are the real limitation.**
-   - On stale values and "which object", the hybrid guesses at chance. ICE does worse, because it confidently copies
-     the wrong occurrence.
-   - On real code, no fixed rule beats 0.07 where the lookup's top guess is wrong; the oracle is 0.34.
-6. **Memory.**
-   - The compact index layout, built as real arrays (`scripts/index_memory.py`, `research/round3/index_memory.json`):
-     82 B/token at 4K and 90 at 32K, every lookup checked. The earlier count was 62–69, at an ideal load factor;
-     power-of-two hash tables add the rest.
-   - Per sequence: 3.8 vs 10.8 MiB at 4K (2.8×), where quality is measured; 6.3 vs 66.8 MiB at 32K (11×).
-   - The Python index used here takes 520–640 B/token. That is an implementation artefact, and still 3× below the
-     hybrid's KV cache.
-   - Decode at 32K: 78.4 vs 86.4 tok/s (H100, `results_t200/benchmark_t200.json`).
-
-7. **A realistic edit** (`scripts/stale_edit.py`, `research/round3/stale_edit.json`, 100 held-out files).
-   - Setup: an old version of the file (10% of names and numbers changed), then the current one.
-   - Unchanged code: loss 0.39 vs 0.89 for the hybrid, top-1 92% vs 80%.
-   - Changed code: 2.72 vs 2.52. At the first token of a changed name it predicts the old name 65% of the time
-     (hybrid 13%).
-   - Both pre-registered checks passed: unchanged ≥ 0.10 better, changed ≤ B + 0.20 (+0.196).
+| Claim | Source |
+|---|---|
+| Perplexity 6.68 / 5.64 / 5.42 (code), 31.3 / 29.5 / 27.8 (text) | Held-out 500 × 4K windows; loss 1.899 / 1.730 / 1.690 and 3.444 / 3.384 / 3.324 nats (`results_t200/README.md`) |
+| Phone-book 0 / 0 / 82%, needle 0 / 0 / 64% (exact match, 4K, n = 50) | `results_t200/tables.txt` (phonebook@4096/em, needle_templated@4096/em) |
+| 2.8× less memory, 9% slower | 3.8 vs 10.8 MiB per sequence at 4K (measured index); 78.4 vs 86.4 tok/s at 32K, H100 (`results_t200/benchmark_t200.json`) |
+| 88% | B − G code loss gap (0.169) split by lookup bucket: 0.149 falls on tokens the lookup predicts right (ordinary training: 45%) |
+| 2 seeds | Code loss ICE − hybrid −0.040 / −0.045 |
+| 65% vs 13% | Stale-file test, 100 held-out files (`research/round3/results_cpu3.md` §4.5) |
+| Lead narrows | ICE − hybrid −0.117 → −0.058 → −0.039 at 131M / 164M / 197M tokens |
 
 ## Likely questions
-- **"Is the hybrid undertrained?"** "Possibly. It repeats real text verbatim only about 60% of the time. The 3×
-  longer run answers that."
-- **"Is 65 bytes measured?"** "A compact array index, built and checked, takes 82–90 bytes per token, against
-  2,048 for the hybrid's KV cache. My Python prototype takes about 600; a C index would not."
-- **"What happens with ICE off?"** "On tokens with no match it beats both baselines, probably because of loss
-  weighting. On copyable tokens it is worse: it specialises."
-- **"Synthetic recall?"** "With random rare tokens the hybrid scored 0, an artefact. On real text it is 60% vs 97%
-  verbatim repeat."
-- **"Is 140M too small?"** "Yes, it's a proof of concept. Next is a bolt-on to real pretrained models."
+
+- **"Why does the hybrid score 0% on phone-book and needle?"** "The models are small (140M) and briefly trained. The
+  hybrid gets single digits right (11% phone-book, 21% needle, token accuracy) but rarely the whole answer. At 1K
+  tokens it gets 14% on the needle; ICE gets 92%."
+- **"Are these standard benchmarks?"** "Perplexity is on held-out splits of FineWeb-Edu and CodeParrot, two public
+  datasets. The phone-book task follows Jelassi et al. 2024 (*Repeat After Me*), and the needle test is the usual
+  needle-in-a-haystack setup. Both are my implementations, with the same items for every model."
+- **"What if the question is worded differently from the context?"** "Exact lookup can't help there. With a
+  paraphrased needle question, all models are near 0% exact match. ICE is for exact copies."
+- **"Is the 65–90 bytes real?"** "Yes: I built the compact index as arrays and checked every lookup. My Python
+  prototype is larger, about 600 bytes per token; that is an implementation detail."
 - **"Why is decoding slower?"** "The index is Python on the CPU, about 0.35 ms per step. A C++ or GPU index would
   remove most of that."
-- **"Does it help a model that already has attention?"** "At 7:1 the hybrid learns to copy by itself, and ICE's gain
-  shrinks to about 0.01. ICE matters most without attention."
+- **"Does the model depend on ICE?"** "Partly. With ICE switched off, it is 0.14 nats worse than the recurrent-only
+  model."
+- **"Is 140M too small?"** "Yes, it's a proof of concept. Next is adding ICE to real pretrained models."
