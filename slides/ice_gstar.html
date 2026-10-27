@@ -158,7 +158,7 @@
             <td><div class="mem"><div class="bar" style="width:260px"></div><span class="v">2,048 B</span></div></td>
             <td class="n">1.730</td><td class="n">3.384</td><td class="n">66.1%</td><td class="n">76.2%</td></tr>
         <tr class="win"><td class="name">Recurrent + ICE<span class="sub">lookup + verifier</span></td>
-            <td><div class="mem"><div class="bar" style="width:9px"></div><span class="v">65 B</span></div></td>
+            <td><div class="mem"><div class="bar" style="width:9px"></div><span class="v">65–90 B</span></div></td>
             <td class="n">1.690</td><td class="n">3.324</td><td class="n">66.5%</td><td class="n">80.8%</td></tr>
       </tbody>
     </table>
@@ -169,7 +169,7 @@
 
   <div class="tiles">
     <div class="tile"><span class="big">2.8×</span>
-      <div><p class="t">less memory at 4K tokens</p><p class="d">3.8 vs 10.8 MiB per sequence (index measured), where quality is measured. Grows 65–90 vs 2,048 B per token (11× less at 32K). Decoding 9% slower (Python index).</p></div></div>
+      <div><p class="t">less memory at 4K tokens</p><p class="d">3.8 vs 10.8 MiB per sequence, measured. Grows 65–90 vs 2,048 B per token (11× less at 32K). Decoding 9% slower (Python index).</p></div></div>
     <div class="tile"><span class="big">2 seeds</span>
       <div><p class="t">same win, but shrinking</p><p class="d">Code −0.040 / −0.045. The lead fell from 0.12 to 0.04 over the last third of training; a 3× longer run is next.</p></div></div>
     <div class="tile"><span class="big">0.19 → 0</span>

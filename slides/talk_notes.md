@@ -26,8 +26,8 @@ print to PDF; each slide prints as one 1920×1080 page. Wording follows `researc
 > next token 81% of the time, against 76% for the hybrid. In fact, 88% of what attention adds is on tokens this
 > lookup already gets right.
 >
-> It needs a third of the hybrid's memory at the 4K length we tested, and its memory grows 65 bytes per token instead
-> of 2 kilobytes. Decoding is 9% slower. A second seed gives the same win. But the lead shrank during training, from
+> It needs about a third of the hybrid's memory at the 4K length we tested, and its memory grows under 100 bytes per
+> token instead of 2 kilobytes. Decoding is 9% slower. A second seed gives the same win. But the lead shrank during training, from
 > 0.12 to 0.04, so a 3× longer run is next.
 >
 > On misleading lookups, the old version lost 0.19 nats where the lookup was wrong. The verifier brings that to zero.
