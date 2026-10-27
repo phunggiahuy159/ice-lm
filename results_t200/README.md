@@ -75,5 +75,21 @@ Pre-registered predictions (`research/decision.md`):
 | G_V vs G_C | ICE-off ≤ G + 0.03 | **fail** (+0.14) |
 | G_VR vs G_V | ≥ +0.10 on a structured-conflict category | **fail** |
 
-Caveats: one seed; 200M tokens; 140M parameters; the ICE table bytes are estimates (benchmark not yet run on the G
+
+## Seed 2 (B and G_VR, same recipe, `--seed 2`; `seed2/results_t200_seed2.json`)
+
+| Metric | B s1 | B s2 | G_VR s1 | G_VR s2 | G_VR − B s1 | G_VR − B s2 |
+|---|---|---|---|---|---|---|
+| code, all | 1.730 | 1.734 | 1.690 | 1.689 | −0.040 | −0.045 |
+| code, copyable | 1.061 | 1.064 | 0.989 | 0.989 | −0.071 | −0.076 |
+| code, copy > 512 back | 1.132 | 1.135 | 0.933 | 0.933 | −0.199 | −0.203 |
+| code, lookup wrong | 3.172 | 3.173 | 3.211 | 3.211 | +0.039 | +0.037 |
+| follow wrong lookup | 0.239 | 0.236 | 0.340 | 0.342 | +0.10 | +0.11 |
+| prose, all | 3.384 | 3.383 | 3.324 | 3.323 | −0.060 | −0.061 |
+
+Seed-to-seed spread ≈ 0.004 on code loss, so the G_VR − B gap (−0.040 / −0.045) is ~10σ. By the pre-registered rule
+(research/round2/decision2.md, F0) this counts as "beats B (2 seeds)", and seed 3 is not needed. CodeRecall is
+noisier across seeds (e.g. G_VR conflict_g1 0.31 vs 0.18; override_same 0.42 vs 0.56).
+
+Caveats (seed 1 section above): 200M tokens; 140M parameters; the ICE table bytes are estimates (benchmark not yet run on the G
 arms).
