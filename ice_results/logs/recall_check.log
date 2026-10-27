@@ -1,0 +1,86 @@
+[gdn] backend=auto -> fla (rel_err=3.74e-07, grads_ok=True, state_ok=True)
+[recall] B            repeat/full@32           acc 0.056  em 0.000
+[recall] B            repeat/frequent@32       acc 0.419  em 0.000
+[recall] B            repeat/natural@32        acc 0.599  em 0.000
+[recall] B            repeat/full@128          acc 0.052  em 0.000
+[recall] B            repeat/frequent@128      acc 0.580  em 0.000
+[recall] B            repeat/natural@128       acc 0.626  em 0.000
+[recall] B            repeat/full@512          acc 0.040  em 0.000
+[recall] B            repeat/frequent@512      acc 0.607  em 0.000
+[recall] B            repeat/natural@512       acc 0.574  em 0.000
+[recall] B            repeat/full@2000         acc 0.000  em 0.000
+[recall] B            repeat/frequent@2000     acc 0.004  em 0.000
+[recall] B            repeat/natural@2000      acc 0.414  em 0.000
+[recall] B            mqar/full@8              acc 0.015  em 0.015
+[recall] B            mqar/frequent@8          acc 0.068  em 0.068
+[recall] B            mqar/full@32             acc 0.010  em 0.010
+[recall] B            mqar/frequent@32         acc 0.115  em 0.115
+[recall] B            mqar/full@128            acc 0.011  em 0.011
+[recall] B            mqar/frequent@128        acc 0.164  em 0.164
+[recall] B            mqar/full@496            acc 0.005  em 0.005
+[recall] B            mqar/frequent@496        acc 0.075  em 0.075
+[recall] G            repeat/full@32           acc 0.019  em 0.000
+[recall] G            repeat/frequent@32       acc 0.194  em 0.000
+[recall] G            repeat/natural@32        acc 0.490  em 0.000
+[recall] G            repeat/full@128          acc 0.002  em 0.000
+[recall] G            repeat/frequent@128      acc 0.032  em 0.000
+[recall] G            repeat/natural@128       acc 0.467  em 0.000
+[recall] G            repeat/full@512          acc 0.000  em 0.000
+[recall] G            repeat/frequent@512      acc 0.001  em 0.000
+[recall] G            repeat/natural@512       acc 0.411  em 0.000
+[recall] G            repeat/full@2000         acc 0.000  em 0.000
+[recall] G            repeat/frequent@2000     acc 0.000  em 0.000
+[recall] G            repeat/natural@2000      acc 0.381  em 0.000
+[recall] G            mqar/full@8              acc 0.010  em 0.010
+[recall] G            mqar/frequent@8          acc 0.060  em 0.060
+[recall] G            mqar/full@32             acc 0.001  em 0.001
+[recall] G            mqar/frequent@32         acc 0.026  em 0.026
+[recall] G            mqar/full@128            acc 0.000  em 0.000
+[recall] G            mqar/frequent@128        acc 0.005  em 0.005
+[recall] G            mqar/full@496            acc 0.000  em 0.000
+[recall] G            mqar/frequent@496        acc 0.001  em 0.001
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[recall] G_VR         repeat/full@32           acc 0.987  em 0.600
+[recall] G_VR         repeat/frequent@32       acc 0.984  em 0.520
+[recall] G_VR         repeat/natural@32        acc 0.928  em 0.060
+[recall] G_VR         repeat/full@128          acc 0.999  em 0.820
+[recall] G_VR         repeat/frequent@128      acc 0.996  em 0.500
+[recall] G_VR         repeat/natural@128       acc 0.971  em 0.020
+[recall] G_VR         repeat/full@512          acc 1.000  em 0.900
+[recall] G_VR         repeat/frequent@512      acc 0.999  em 0.660
+[recall] G_VR         repeat/natural@512       acc 0.972  em 0.000
+[recall] G_VR         repeat/full@2000         acc 1.000  em 0.940
+[recall] G_VR         repeat/frequent@2000     acc 1.000  em 0.460
+[recall] G_VR         repeat/natural@2000      acc 0.963  em 0.000
+[recall] G_VR         mqar/full@8              acc 0.810  em 0.810
+[recall] G_VR         mqar/frequent@8          acc 0.527  em 0.527
+[recall] G_VR         mqar/full@32             acc 0.899  em 0.899
+[recall] G_VR         mqar/frequent@32         acc 0.630  em 0.630
+[recall] G_VR         mqar/full@128            acc 0.927  em 0.927
+[recall] G_VR         mqar/frequent@128        acc 0.650  em 0.650
+[recall] G_VR         mqar/full@496            acc 0.935  em 0.935
+[recall] G_VR         mqar/frequent@496        acc 0.654  em 0.654
+
+token accuracy (em = whole span right; mqar: one token per query)
+task                                   B             G          G_VR
+repeat/full@32                     0.056         0.019         0.987
+repeat/frequent@32                 0.419         0.194         0.984
+repeat/natural@32                  0.599         0.490         0.928
+repeat/full@128                    0.052         0.002         0.999
+repeat/frequent@128                0.580         0.032         0.996
+repeat/natural@128                 0.626         0.467         0.971
+repeat/full@512                    0.040         0.000         1.000
+repeat/frequent@512                0.607         0.001         0.999
+repeat/natural@512                 0.574         0.411         0.972
+repeat/full@2000                   0.000         0.000         1.000
+repeat/frequent@2000               0.004         0.000         1.000
+repeat/natural@2000                0.414         0.381         0.963
+mqar/full@8                        0.015         0.010         0.810
+mqar/frequent@8                    0.068         0.060         0.527
+mqar/full@32                       0.010         0.001         0.899
+mqar/frequent@32                   0.115         0.026         0.630
+mqar/full@128                      0.011         0.000         0.927
+mqar/frequent@128                  0.164         0.005         0.650
+mqar/full@496                      0.005         0.000         0.935
+mqar/frequent@496                  0.075         0.001         0.654
+saved /kaggle/working/ice_results/recall_check.json

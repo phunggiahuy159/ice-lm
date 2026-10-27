@@ -1,0 +1,49 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[gdn] backend=auto -> fla (rel_err=3.74e-07, grads_ok=True, state_ok=True)
+[linecomp] 1200 lines: repeat 228, reuse 721, novel 251
+[linecomp] G_VR: cached decode matches the full forward (max |dlogit| 1.14e-05)
+[linecomp] G_VR: 50/1200 (36s)
+[linecomp] G_VR: 100/1200 (68s)
+[linecomp] G_VR: 150/1200 (99s)
+[linecomp] G_VR: 200/1200 (129s)
+[linecomp] G_VR: 250/1200 (158s)
+[linecomp] G_VR: 300/1200 (194s)
+[linecomp] G_VR: 350/1200 (232s)
+[linecomp] G_VR: 400/1200 (262s)
+[linecomp] G_VR: 450/1200 (295s)
+[linecomp] G_VR: 500/1200 (327s)
+[linecomp] G_VR: 550/1200 (364s)
+[linecomp] G_VR: 600/1200 (400s)
+[linecomp] G_VR: 650/1200 (438s)
+[linecomp] G_VR: 700/1200 (472s)
+[linecomp] G_VR: 750/1200 (502s)
+[linecomp] G_VR: 800/1200 (538s)
+[linecomp] G_VR: 850/1200 (569s)
+[linecomp] G_VR: 900/1200 (602s)
+[linecomp] G_VR: 950/1200 (638s)
+[linecomp] G_VR: 1000/1200 (670s)
+[linecomp] G_VR: 1050/1200 (717s)
+[linecomp] G_VR: 1100/1200 (749s)
+[linecomp] G_VR: 1150/1200 (781s)
+[linecomp] G_VR: 1200/1200 (814s)
+[linecomp] G_VR: all em 0.133  repeat em 0.513  reuse em 0.032  novel em 0.080  (814s)
+
+line completion (greedy, exact match / edit similarity)
+metric                          G_VR
+all/n                           1200
+all/em                         0.133
+all/edit_sim                   0.576
+all/prefix                     0.286
+repeat/n                         228
+repeat/em                      0.513
+repeat/edit_sim                0.755
+repeat/prefix                  0.633
+reuse/n                          721
+reuse/em                       0.032
+reuse/edit_sim                 0.527
+reuse/prefix                   0.189
+novel/n                          251
+novel/em                       0.080
+novel/edit_sim                 0.554
+novel/prefix                   0.252
+saved /kaggle/working/ice_results/line_t200_G_VR.json

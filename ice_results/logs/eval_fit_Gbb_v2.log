@@ -1,0 +1,429 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (3677 > 2048). Running this sequence through the model will result in indexing errors
+[gdn] backend=auto -> fla (rel_err=3.74e-07, grads_ok=True, state_ok=True)
+
+### G+fit_vr2 (/kaggle/working/fits/fit_Gbb_v2, 200.0M tokens)
+  arm                                              G+fit_vr2
+  tokens                                           200000000
+  params                                           147731385
+  ice_params                                       2873
+  kv_bytes_per_token                               0
+  seed                                             1234
+  train_gflops_per_token                           0.9005
+  prose/all_loss                                   3.3756
+  prose/all_acc                                    0.3882
+  prose/all_frac                                   1.0000
+  prose/copyable_loss                              2.0737
+  prose/copyable_acc                               0.6067
+  prose/copyable_frac                              0.0573
+  prose/other_loss                                 3.4547
+  prose/other_acc                                  0.3749
+  prose/other_frac                                 0.9427
+  prose/copy_far_loss                              2.1735
+  prose/copy_far_acc                               0.5863
+  prose/copy_far_frac                              0.0112
+  prose/lk_right_loss                              0.6125
+  prose/lk_right_acc                               0.8822
+  prose/lk_right_frac                              0.1443
+  prose/lk_wrong_loss                              4.3630
+  prose/lk_wrong_acc                               0.2251
+  prose/lk_wrong_frac                              0.4539
+  prose/lk_none_loss                               3.2528
+  prose/lk_none_acc                                0.3950
+  prose/lk_none_frac                               0.4018
+  prose/follow_wrong_lookup                        0.2067
+  code/all_loss                                    1.7095
+  code/all_acc                                     0.6643
+  code/all_frac                                    1.0000
+  code/copyable_loss                               0.9873
+  code/copyable_acc                                0.8061
+  code/copyable_frac                               0.3752
+  code/other_loss                                  2.1433
+  code/other_acc                                   0.5792
+  code/other_frac                                  0.6248
+  code/copy_far_loss                               0.9087
+  code/copy_far_acc                                0.8151
+  code/copy_far_frac                               0.0700
+  code/lk_right_loss                               0.2453
+  code/lk_right_acc                                0.9506
+  code/lk_right_frac                               0.4760
+  code/lk_wrong_loss                               3.2705
+  code/lk_wrong_acc                                0.3487
+  code/lk_wrong_frac                               0.3546
+  code/lk_none_loss                                2.5557
+  code/lk_none_acc                                 0.5207
+  code/lk_none_frac                                0.1694
+  code/follow_wrong_lookup                         0.3137
+  repeat@1024/acc                                  0.9997
+  repeat@1024/em                                   0.8600
+  mqar@1024/acc                                    0.9313
+  phonebook@1024/acc                               0.9657
+  phonebook@1024/em                                0.7600
+  needle_templated@1024/acc                        0.9850
+  needle_templated@1024/em                         0.9400
+  needle_paraphrased@1024/acc                      0.5350
+  needle_paraphrased@1024/em                       0.0400
+  repeat@4096/acc                                  0.9999
+  repeat@4096/em                                   0.8400
+  mqar@4096/acc                                    0.8888
+  phonebook@4096/acc                               0.9629
+  phonebook@4096/em                                0.7600
+  needle_templated@4096/acc                        0.9900
+  needle_templated@4096/em                         0.9600
+  needle_paraphrased@4096/acc                      0.3300
+  needle_paraphrased@4096/em                       0.0000
+  coderecall/copy_same@256/em                      0.1400
+  coderecall/copy_same@256/dec_acc                 0.3000
+  coderecall/copy_same@256/dec_acc_lookup_right    0.3226
+  coderecall/copy_same@256/dec_acc_lookup_wrong    0.0000
+  coderecall/copy_same@256/dec_acc_lookup_none     nan
+  coderecall/copy_same@256/dec_lookup_right_frac   0.9300
+  coderecall/copy_same@256/dec_lookup_wrong_frac   0.0700
+  coderecall/copy_same@256/dec_follow_wrong_lookup 0.0000
+  coderecall/copy_same@1024/em                     0.0100
+  coderecall/copy_same@1024/dec_acc                0.1700
+  coderecall/copy_same@1024/dec_acc_lookup_right   0.1839
+  coderecall/copy_same@1024/dec_acc_lookup_wrong   0.0769
+  coderecall/copy_same@1024/dec_acc_lookup_none    nan
+  coderecall/copy_same@1024/dec_lookup_right_frac  0.8700
+  coderecall/copy_same@1024/dec_lookup_wrong_frac  0.1300
+  coderecall/copy_same@1024/dec_follow_wrong_lookup 0.0000
+  coderecall/copy_same@3072/em                     0.0100
+  coderecall/copy_same@3072/dec_acc                0.1800
+  coderecall/copy_same@3072/dec_acc_lookup_right   0.2022
+  coderecall/copy_same@3072/dec_acc_lookup_wrong   0.0000
+  coderecall/copy_same@3072/dec_acc_lookup_none    nan
+  coderecall/copy_same@3072/dec_lookup_right_frac  0.8900
+  coderecall/copy_same@3072/dec_lookup_wrong_frac  0.1100
+  coderecall/copy_same@3072/dec_follow_wrong_lookup 0.1818
+  coderecall/copy_diff@256/em                      0.0100
+  coderecall/copy_diff@256/dec_acc                 0.0500
+  coderecall/copy_diff@256/dec_acc_lookup_right    0.2500
+  coderecall/copy_diff@256/dec_acc_lookup_wrong    0.0323
+  coderecall/copy_diff@256/dec_acc_lookup_none     0.0588
+  coderecall/copy_diff@256/dec_lookup_right_frac   0.0400
+  coderecall/copy_diff@256/dec_lookup_wrong_frac   0.6200
+  coderecall/copy_diff@256/dec_follow_wrong_lookup 0.1613
+  coderecall/copy_diff@1024/em                     0.0000
+  coderecall/copy_diff@1024/dec_acc                0.0900
+  coderecall/copy_diff@1024/dec_acc_lookup_right   nan
+  coderecall/copy_diff@1024/dec_acc_lookup_wrong   0.0864
+  coderecall/copy_diff@1024/dec_acc_lookup_none    0.1053
+  coderecall/copy_diff@1024/dec_lookup_right_frac  0.0000
+  coderecall/copy_diff@1024/dec_lookup_wrong_frac  0.8100
+  coderecall/copy_diff@1024/dec_follow_wrong_lookup 0.2099
+  coderecall/copy_diff@3072/em                     0.0000
+  coderecall/copy_diff@3072/dec_acc                0.1200
+  coderecall/copy_diff@3072/dec_acc_lookup_right   0.6000
+  coderecall/copy_diff@3072/dec_acc_lookup_wrong   0.0889
+  coderecall/copy_diff@3072/dec_acc_lookup_none    0.2000
+  coderecall/copy_diff@3072/dec_lookup_right_frac  0.0500
+  coderecall/copy_diff@3072/dec_lookup_wrong_frac  0.9000
+  coderecall/copy_diff@3072/dec_follow_wrong_lookup 0.2111
+  coderecall/conflict_g1@256/em                    0.9400
+  coderecall/conflict_g1@256/dec_acc               0.9500
+  coderecall/conflict_g1@256/dec_acc_lookup_right  0.9500
+  coderecall/conflict_g1@256/dec_acc_lookup_wrong  nan
+  coderecall/conflict_g1@256/dec_acc_lookup_none   nan
+  coderecall/conflict_g1@256/dec_lookup_right_frac 1.0000
+  coderecall/conflict_g1@256/dec_lookup_wrong_frac 0.0000
+  coderecall/conflict_g1@256/dec_follow_wrong_lookup nan
+  coderecall/conflict_g1@1024/em                   0.9800
+  coderecall/conflict_g1@1024/dec_acc              0.9800
+  coderecall/conflict_g1@1024/dec_acc_lookup_right 0.9800
+  coderecall/conflict_g1@1024/dec_acc_lookup_wrong nan
+  coderecall/conflict_g1@1024/dec_acc_lookup_none  nan
+  coderecall/conflict_g1@1024/dec_lookup_right_frac 1.0000
+  coderecall/conflict_g1@1024/dec_lookup_wrong_frac 0.0000
+  coderecall/conflict_g1@1024/dec_follow_wrong_lookup nan
+  coderecall/conflict_g1@3072/em                   0.9500
+  coderecall/conflict_g1@3072/dec_acc              0.9800
+  coderecall/conflict_g1@3072/dec_acc_lookup_right 0.9800
+  coderecall/conflict_g1@3072/dec_acc_lookup_wrong nan
+  coderecall/conflict_g1@3072/dec_acc_lookup_none  nan
+  coderecall/conflict_g1@3072/dec_lookup_right_frac 1.0000
+  coderecall/conflict_g1@3072/dec_lookup_wrong_frac 0.0000
+  coderecall/conflict_g1@3072/dec_follow_wrong_lookup nan
+  coderecall/conflict_g2@256/em                    0.7000
+  coderecall/conflict_g2@256/dec_acc               0.7000
+  coderecall/conflict_g2@256/dec_acc_lookup_right  nan
+  coderecall/conflict_g2@256/dec_acc_lookup_wrong  0.7000
+  coderecall/conflict_g2@256/dec_acc_lookup_none   nan
+  coderecall/conflict_g2@256/dec_lookup_right_frac 0.0000
+  coderecall/conflict_g2@256/dec_lookup_wrong_frac 1.0000
+  coderecall/conflict_g2@256/dec_follow_wrong_lookup 0.2000
+  coderecall/conflict_g2@1024/em                   0.6500
+  coderecall/conflict_g2@1024/dec_acc              0.6600
+  coderecall/conflict_g2@1024/dec_acc_lookup_right nan
+  coderecall/conflict_g2@1024/dec_acc_lookup_wrong 0.6600
+  coderecall/conflict_g2@1024/dec_acc_lookup_none  nan
+  coderecall/conflict_g2@1024/dec_lookup_right_frac 0.0000
+  coderecall/conflict_g2@1024/dec_lookup_wrong_frac 1.0000
+  coderecall/conflict_g2@1024/dec_follow_wrong_lookup 0.2000
+  coderecall/conflict_g2@3072/em                   0.6400
+  coderecall/conflict_g2@3072/dec_acc              0.6400
+  coderecall/conflict_g2@3072/dec_acc_lookup_right nan
+  coderecall/conflict_g2@3072/dec_acc_lookup_wrong 0.6400
+  coderecall/conflict_g2@3072/dec_acc_lookup_none  nan
+  coderecall/conflict_g2@3072/dec_lookup_right_frac 0.0000
+  coderecall/conflict_g2@3072/dec_lookup_wrong_frac 1.0000
+  coderecall/conflict_g2@3072/dec_follow_wrong_lookup 0.2400
+  coderecall/conflict_g5@256/em                    0.7300
+  coderecall/conflict_g5@256/dec_acc               0.7300
+  coderecall/conflict_g5@256/dec_acc_lookup_right  nan
+  coderecall/conflict_g5@256/dec_acc_lookup_wrong  0.7300
+  coderecall/conflict_g5@256/dec_acc_lookup_none   nan
+  coderecall/conflict_g5@256/dec_lookup_right_frac 0.0000
+  coderecall/conflict_g5@256/dec_lookup_wrong_frac 1.0000
+  coderecall/conflict_g5@256/dec_follow_wrong_lookup 0.2600
+  coderecall/conflict_g5@1024/em                   0.8100
+  coderecall/conflict_g5@1024/dec_acc              0.8100
+  coderecall/conflict_g5@1024/dec_acc_lookup_right nan
+  coderecall/conflict_g5@1024/dec_acc_lookup_wrong 0.8100
+  coderecall/conflict_g5@1024/dec_acc_lookup_none  nan
+  coderecall/conflict_g5@1024/dec_lookup_right_frac 0.0000
+  coderecall/conflict_g5@1024/dec_lookup_wrong_frac 1.0000
+  coderecall/conflict_g5@1024/dec_follow_wrong_lookup 0.1700
+  coderecall/conflict_g5@3072/em                   0.7700
+  coderecall/conflict_g5@3072/dec_acc              0.7700
+  coderecall/conflict_g5@3072/dec_acc_lookup_right nan
+  coderecall/conflict_g5@3072/dec_acc_lookup_wrong 0.7700
+  coderecall/conflict_g5@3072/dec_acc_lookup_none  nan
+  coderecall/conflict_g5@3072/dec_lookup_right_frac 0.0000
+  coderecall/conflict_g5@3072/dec_lookup_wrong_frac 1.0000
+  coderecall/conflict_g5@3072/dec_follow_wrong_lookup 0.2200
+  coderecall/override_same@256/em                  0.1400
+  coderecall/override_same@256/dec_acc             0.2500
+  coderecall/override_same@256/dec_acc_lookup_right 0.2500
+  coderecall/override_same@256/dec_acc_lookup_wrong nan
+  coderecall/override_same@256/dec_acc_lookup_none nan
+  coderecall/override_same@256/dec_lookup_right_frac 1.0000
+  coderecall/override_same@256/dec_lookup_wrong_frac 0.0000
+  coderecall/override_same@256/dec_follow_wrong_lookup nan
+  coderecall/override_same@1024/em                 0.0200
+  coderecall/override_same@1024/dec_acc            0.1300
+  coderecall/override_same@1024/dec_acc_lookup_right 0.1300
+  coderecall/override_same@1024/dec_acc_lookup_wrong nan
+  coderecall/override_same@1024/dec_acc_lookup_none nan
+  coderecall/override_same@1024/dec_lookup_right_frac 1.0000
+  coderecall/override_same@1024/dec_lookup_wrong_frac 0.0000
+  coderecall/override_same@1024/dec_follow_wrong_lookup nan
+  coderecall/override_same@3072/em                 0.0000
+  coderecall/override_same@3072/dec_acc            0.0600
+  coderecall/override_same@3072/dec_acc_lookup_right 0.0600
+  coderecall/override_same@3072/dec_acc_lookup_wrong nan
+  coderecall/override_same@3072/dec_acc_lookup_none nan
+  coderecall/override_same@3072/dec_lookup_right_frac 1.0000
+  coderecall/override_same@3072/dec_lookup_wrong_frac 0.0000
+  coderecall/override_same@3072/dec_follow_wrong_lookup nan
+  coderecall/override_diff@256/em                  0.0000
+  coderecall/override_diff@256/dec_acc             0.0400
+  coderecall/override_diff@256/dec_acc_lookup_right nan
+  coderecall/override_diff@256/dec_acc_lookup_wrong 0.0400
+  coderecall/override_diff@256/dec_acc_lookup_none nan
+  coderecall/override_diff@256/dec_lookup_right_frac 0.0000
+  coderecall/override_diff@256/dec_lookup_wrong_frac 1.0000
+  coderecall/override_diff@256/dec_follow_wrong_lookup 0.3800
+  coderecall/override_diff@1024/em                 0.0000
+  coderecall/override_diff@1024/dec_acc            0.0500
+  coderecall/override_diff@1024/dec_acc_lookup_right nan
+  coderecall/override_diff@1024/dec_acc_lookup_wrong 0.0500
+  coderecall/override_diff@1024/dec_acc_lookup_none nan
+  coderecall/override_diff@1024/dec_lookup_right_frac 0.0000
+  coderecall/override_diff@1024/dec_lookup_wrong_frac 1.0000
+  coderecall/override_diff@1024/dec_follow_wrong_lookup 0.3800
+  coderecall/override_diff@3072/em                 0.0000
+  coderecall/override_diff@3072/dec_acc            0.0600
+  coderecall/override_diff@3072/dec_acc_lookup_right nan
+  coderecall/override_diff@3072/dec_acc_lookup_wrong 0.0600
+  coderecall/override_diff@3072/dec_acc_lookup_none nan
+  coderecall/override_diff@3072/dec_lookup_right_frac 0.0000
+  coderecall/override_diff@3072/dec_lookup_wrong_frac 1.0000
+  coderecall/override_diff@3072/dec_follow_wrong_lookup 0.1200
+  coderecall/increment@256/em                      0.0000
+  coderecall/increment@256/dec_acc                 0.0000
+  coderecall/increment@256/dec_acc_lookup_right    nan
+  coderecall/increment@256/dec_acc_lookup_wrong    0.0000
+  coderecall/increment@256/dec_acc_lookup_none     nan
+  coderecall/increment@256/dec_lookup_right_frac   0.0000
+  coderecall/increment@256/dec_lookup_wrong_frac   1.0000
+  coderecall/increment@256/dec_follow_wrong_lookup 0.9200
+  coderecall/track@256/em                          0.0200
+  coderecall/track@256/dec_acc                     0.0200
+  coderecall/track@256/dec_acc_lookup_right        nan
+  coderecall/track@256/dec_acc_lookup_wrong        0.0200
+  coderecall/track@256/dec_acc_lookup_none         nan
+  coderecall/track@256/dec_lookup_right_frac       0.0000
+  coderecall/track@256/dec_lookup_wrong_frac       1.0000
+  coderecall/track@256/dec_follow_wrong_lookup     0.0000
+  syn/fit_conflict_call@256/em                     0.7800
+  syn/fit_conflict_call@256/dec_acc                0.7800
+  syn/fit_conflict_call@256/dec_acc_lookup_right   nan
+  syn/fit_conflict_call@256/dec_acc_lookup_wrong   0.7800
+  syn/fit_conflict_call@256/dec_lookup_wrong_frac  1.0000
+  syn/fit_conflict_call@256/dec_follow_wrong_lookup 0.1400
+  syn/fit_conflict_call@1024/em                    0.8200
+  syn/fit_conflict_call@1024/dec_acc               0.8200
+  syn/fit_conflict_call@1024/dec_acc_lookup_right  nan
+  syn/fit_conflict_call@1024/dec_acc_lookup_wrong  0.8200
+  syn/fit_conflict_call@1024/dec_lookup_wrong_frac 1.0000
+  syn/fit_conflict_call@1024/dec_follow_wrong_lookup 0.1400
+  syn/fit_conflict_dict@256/em                     0.8200
+  syn/fit_conflict_dict@256/dec_acc                0.8200
+  syn/fit_conflict_dict@256/dec_acc_lookup_right   nan
+  syn/fit_conflict_dict@256/dec_acc_lookup_wrong   0.8200
+  syn/fit_conflict_dict@256/dec_lookup_wrong_frac  1.0000
+  syn/fit_conflict_dict@256/dec_follow_wrong_lookup 0.1200
+  syn/fit_conflict_dict@1024/em                    0.6200
+  syn/fit_conflict_dict@1024/dec_acc               0.6200
+  syn/fit_conflict_dict@1024/dec_acc_lookup_right  nan
+  syn/fit_conflict_dict@1024/dec_acc_lookup_wrong  0.6200
+  syn/fit_conflict_dict@1024/dec_lookup_wrong_frac 1.0000
+  syn/fit_conflict_dict@1024/dec_follow_wrong_lookup 0.3000
+  syn/fit_override_setattr@256/em                  0.0000
+  syn/fit_override_setattr@256/dec_acc             0.0200
+  syn/fit_override_setattr@256/dec_acc_lookup_right nan
+  syn/fit_override_setattr@256/dec_acc_lookup_wrong 0.0200
+  syn/fit_override_setattr@256/dec_lookup_wrong_frac 1.0000
+  syn/fit_override_setattr@256/dec_follow_wrong_lookup 0.9000
+  syn/fit_override_setattr@1024/em                 0.0000
+  syn/fit_override_setattr@1024/dec_acc            0.0600
+  syn/fit_override_setattr@1024/dec_acc_lookup_right nan
+  syn/fit_override_setattr@1024/dec_acc_lookup_wrong 0.0600
+  syn/fit_override_setattr@1024/dec_lookup_wrong_frac 1.0000
+  syn/fit_override_setattr@1024/dec_follow_wrong_lookup 0.7400
+  syn/ho_conflict_positional@256/em                0.8200
+  syn/ho_conflict_positional@256/dec_acc           0.8200
+  syn/ho_conflict_positional@256/dec_acc_lookup_right nan
+  syn/ho_conflict_positional@256/dec_acc_lookup_wrong 0.8200
+  syn/ho_conflict_positional@256/dec_lookup_wrong_frac 1.0000
+  syn/ho_conflict_positional@256/dec_follow_wrong_lookup 0.0600
+  syn/ho_conflict_positional@1024/em               0.7800
+  syn/ho_conflict_positional@1024/dec_acc          0.8000
+  syn/ho_conflict_positional@1024/dec_acc_lookup_right nan
+  syn/ho_conflict_positional@1024/dec_acc_lookup_wrong 0.8000
+  syn/ho_conflict_positional@1024/dec_lookup_wrong_frac 1.0000
+  syn/ho_conflict_positional@1024/dec_follow_wrong_lookup 0.0400
+  syn/ho_conflict_swapped@256/em                   0.9600
+  syn/ho_conflict_swapped@256/dec_acc              0.9600
+  syn/ho_conflict_swapped@256/dec_acc_lookup_right 1.0000
+  syn/ho_conflict_swapped@256/dec_acc_lookup_wrong 0.9565
+  syn/ho_conflict_swapped@256/dec_lookup_wrong_frac 0.9200
+  syn/ho_conflict_swapped@256/dec_follow_wrong_lookup 0.0217
+  syn/ho_conflict_swapped@1024/em                  1.0000
+  syn/ho_conflict_swapped@1024/dec_acc             1.0000
+  syn/ho_conflict_swapped@1024/dec_acc_lookup_right 1.0000
+  syn/ho_conflict_swapped@1024/dec_acc_lookup_wrong 1.0000
+  syn/ho_conflict_swapped@1024/dec_lookup_wrong_frac 0.9200
+  syn/ho_conflict_swapped@1024/dec_follow_wrong_lookup 0.0000
+  syn/ho_override_state@256/em                     0.0200
+  syn/ho_override_state@256/dec_acc                0.0800
+  syn/ho_override_state@256/dec_acc_lookup_right   0.5000
+  syn/ho_override_state@256/dec_acc_lookup_wrong   0.0435
+  syn/ho_override_state@256/dec_lookup_wrong_frac  0.9200
+  syn/ho_override_state@256/dec_follow_wrong_lookup 0.6957
+  syn/ho_override_state@1024/em                    0.0000
+  syn/ho_override_state@1024/dec_acc               0.0400
+  syn/ho_override_state@1024/dec_acc_lookup_right  0.0000
+  syn/ho_override_state@1024/dec_acc_lookup_wrong  0.0444
+  syn/ho_override_state@1024/dec_lookup_wrong_frac 0.9000
+  syn/ho_override_state@1024/dec_follow_wrong_lookup 0.4667
+
+== cost
+metric                                        G+fit_vr2
+params                                        147731385
+ICE params                                         2873
+KV bytes/token                                        0
+train GFLOPs/token                               0.9005
+seed                                               1234
+tokens                                        200000000
+
+== held-out loss (lower is better)
+metric                                        G+fit_vr2
+code/all                                         1.7095
+code/other                                       2.1433
+code/copyable                                    0.9873
+code/copy_far                                    0.9087
+code/lk_right                                    0.2453
+code/lk_wrong                                    3.2705
+code/lk_none                                     2.5557
+prose/all                                        3.3756
+prose/other                                      3.4547
+prose/copyable                                   2.0737
+prose/copy_far                                   2.1735
+prose/lk_right                                   0.6125
+prose/lk_wrong                                   4.3630
+prose/lk_none                                    3.2528
+
+== misleading lookups: P(top-1 = wrong lookup token); excess = minus the reference arm's rate
+metric                                        G+fit_vr2
+code/follow_wrong_lookup                         0.3137
+prose/follow_wrong_lookup                        0.2067
+
+== CodeRecall: accuracy on the deciding digit (mean over gaps)
+metric                                        G+fit_vr2
+copy_same                                        0.2167
+copy_diff                                        0.0867
+conflict_g1                                      0.9700
+conflict_g2                                      0.6667
+conflict_g5                                      0.7700
+override_same                                    0.1467
+override_diff                                    0.0500
+increment                                        0.0000
+track                                            0.0200
+
+== CodeRecall: share of items where the lookup is wrong on the deciding digit
+metric                                        G+fit_vr2
+copy_same                                        0.1033
+copy_diff                                        0.7767
+conflict_g1                                      0.0000
+conflict_g2                                      1.0000
+conflict_g5                                      1.0000
+override_same                                    0.0000
+override_diff                                    1.0000
+increment                                        1.0000
+track                                            1.0000
+
+== CodeRecall: follow rate on wrong lookups (deciding digit)
+metric                                        G+fit_vr2
+copy_same                                        0.0606
+copy_diff                                        0.1941
+conflict_g2                                      0.2133
+conflict_g5                                      0.2167
+override_diff                                    0.2933
+increment                                        0.9200
+track                                            0.0000
+
+== synthetic conflict / override templates (task-supervised fits): deciding-digit accuracy
+metric                                        G+fit_vr2
+fit_conflict_call                                0.8000
+fit_conflict_dict                                0.7200
+fit_override_setattr                             0.0400
+ho_conflict_positional                           0.8100
+ho_conflict_swapped                              0.9800
+ho_override_state                                0.0600
+fit_mean                                         0.5200
+heldout_mean                                     0.6167
+
+== synthetic / needle tasks
+metric                                        G+fit_vr2
+repeat@1024/acc                                  0.9997
+repeat@1024/em                                   0.8600
+mqar@1024/acc                                    0.9313
+phonebook@1024/acc                               0.9657
+phonebook@1024/em                                0.7600
+needle_templated@1024/acc                        0.9850
+needle_templated@1024/em                         0.9400
+needle_paraphrased@1024/acc                      0.5350
+needle_paraphrased@1024/em                       0.0400
+repeat@4096/acc                                  0.9999
+repeat@4096/em                                   0.8400
+mqar@4096/acc                                    0.8888
+phonebook@4096/acc                               0.9629
+phonebook@4096/em                                0.7600
+needle_templated@4096/acc                        0.9900
+needle_templated@4096/em                         0.9600
+needle_paraphrased@4096/acc                      0.3300
+needle_paraphrased@4096/em                       0.0000
+
+saved /kaggle/working/ice_results/eval_fit_Gbb_v2.json

@@ -1,0 +1,33 @@
+[gdn] backend=auto -> fla (rel_err=3.74e-07, grads_ok=True, state_ok=True)
+[fit] init_from: dropped beta=0.1795; gamma clamped >= 1e-3 (3 slots)
+[fit] init_from /kaggle/working/inputs/runs/t200_G_VR: fresh ['R.weight', 'A.weight', 'N.weight', 'Q.weight']
+[fit] base=/kaggle/working/inputs/runs/t200_G_VR cand=vr v2=True(dnrq) listwise=0.25 verify=True trainable=2873 frozen=147728512
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[fit] synthetic items: 4000 (fit_conflict_call, fit_conflict_dict, fit_override_setattr), syn_frac=0.02
+[fit] unseen windows: data seed 1234, samples 48832..53715 of 102585 (the backbone consumed 48832)
+[fit] step 1/611 loss 5.3429 lr 1.50e-03 tok/s 5,746
+[fit] step 25/611 loss 5.2398 lr 2.99e-02 tok/s 6,413
+[fit] step 50/611 loss 1.8892 lr 2.95e-02 tok/s 6,444
+[fit] step 75/611 loss 5.3275 lr 2.89e-02 tok/s 6,451
+[fit] step 100/611 loss 3.0637 lr 2.81e-02 tok/s 6,461
+[fit] step 125/611 loss 5.0707 lr 2.70e-02 tok/s 6,468
+[fit] step 150/611 loss 3.7535 lr 2.58e-02 tok/s 6,474
+[fit] step 175/611 loss 3.6833 lr 2.43e-02 tok/s 6,478
+[fit] step 200/611 loss 3.7546 lr 2.27e-02 tok/s 6,478
+[fit] step 225/611 loss 3.3211 lr 2.10e-02 tok/s 6,480
+[fit] step 250/611 loss 4.3378 lr 1.92e-02 tok/s 6,482
+[fit] step 275/611 loss 4.8108 lr 1.73e-02 tok/s 6,480
+[fit] step 300/611 loss 4.0769 lr 1.54e-02 tok/s 6,479
+[fit] step 325/611 loss 3.9134 lr 1.35e-02 tok/s 6,480
+[fit] step 350/611 loss 5.1462 lr 1.16e-02 tok/s 6,481
+[fit] step 375/611 loss 1.8267 lr 9.75e-03 tok/s 6,480
+[fit] step 400/611 loss 4.7587 lr 8.00e-03 tok/s 6,480
+[fit] step 425/611 loss 4.8538 lr 6.35e-03 tok/s 6,481
+[fit] step 450/611 loss 5.5548 lr 4.85e-03 tok/s 6,482
+[fit] step 475/611 loss 3.9514 lr 3.52e-03 tok/s 6,483
+[fit] step 500/611 loss 4.3221 lr 2.38e-03 tok/s 6,483
+[fit] step 525/611 loss 4.8075 lr 1.44e-03 tok/s 6,482
+[fit] step 550/611 loss 6.3333 lr 7.32e-04 tok/s 6,482
+[fit] step 575/611 loss 4.1500 lr 2.56e-04 tok/s 6,482
+[fit] step 600/611 loss 5.4317 lr 2.40e-05 tok/s 6,482
+[fit] saved /kaggle/working/fits/fit_GVRbb_v2syn in 3090s

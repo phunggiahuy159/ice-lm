@@ -3,6 +3,14 @@
 Repo: https://github.com/huypg-zenai/ice-lm (private, branch `main`). Local copy: `/Users/phunghuy/code/gstar/proposal_ice`.
 Runs, models and data live on Modal (see "Infrastructure"); this repo holds code, docs, logs and small result files.
 
+## Kaggle results are in (28 Oct): `ice_results/README.md`
+All 19 decision3 jobs ran on 2× T4, and the T4 reproduces the H100 to within 0.0001.
+- **Frozen G + 2.9K-parameter V2 scorer beats the 7:1 hybrid:** code 1.710 vs 1.730, prose 3.376 vs 3.384, line exact match 15.7% vs 11.8% (+3.8 pts, CI [+2.2, +5.6]). ICE off is G exactly.
+- **V2 solves "which object" conflicts** without task supervision: CodeRecall g2/g5 go from 0.00 to 0.81–0.87.
+  - **Caveats:** override_same drops 0.42 → 0.15, and override_diff (stale values) is still unsolved, even with synthetic supervision.
+- **B + V2 = 1.665 code** (−0.065 vs B): ICE helps the hybrid too. The pre-registered range was −0.005 to −0.02, so this check failed in the favourable direction.
+- **The gate refit is 0.0064 better than G_VR** (outside ±0.005): most of V2's loss gain over G_VR comes from refitting, not from the features.
+
 ## 0. Round-2 status (27 Oct, 07:50 UTC+7): blocked on the Modal spend limit
 
 * **Done in round 2:**

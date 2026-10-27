@@ -1,0 +1,30 @@
+[gdn] backend=auto -> fla (rel_err=3.74e-07, grads_ok=True, state_ok=True)
+[fit] base=/kaggle/working/inputs/runs/t200_G cand=vr v2=True(dnrq) listwise=0.25 verify=True trainable=2873 frozen=147728512
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[fit] unseen windows: data seed 1234, samples 48832..53715 of 102585 (the backbone consumed 48832)
+[fit] step 1/611 loss 5.4375 lr 1.50e-03 tok/s 4,814
+[fit] step 25/611 loss 5.2884 lr 2.99e-02 tok/s 6,409
+[fit] step 50/611 loss 1.8338 lr 2.95e-02 tok/s 6,471
+[fit] step 75/611 loss 5.4065 lr 2.89e-02 tok/s 6,488
+[fit] step 100/611 loss 3.0543 lr 2.81e-02 tok/s 6,501
+[fit] step 125/611 loss 5.1149 lr 2.70e-02 tok/s 6,505
+[fit] step 150/611 loss 3.0011 lr 2.58e-02 tok/s 6,508
+[fit] step 175/611 loss 3.7144 lr 2.43e-02 tok/s 6,510
+[fit] step 200/611 loss 3.7779 lr 2.27e-02 tok/s 6,512
+[fit] step 225/611 loss 3.3129 lr 2.10e-02 tok/s 6,514
+[fit] step 250/611 loss 4.3638 lr 1.92e-02 tok/s 6,517
+[fit] step 275/611 loss 4.8624 lr 1.73e-02 tok/s 6,518
+[fit] step 300/611 loss 4.0186 lr 1.54e-02 tok/s 6,519
+[fit] step 325/611 loss 3.9436 lr 1.35e-02 tok/s 6,521
+[fit] step 350/611 loss 5.1779 lr 1.16e-02 tok/s 6,521
+[fit] step 375/611 loss 1.7523 lr 9.75e-03 tok/s 6,521
+[fit] step 400/611 loss 4.8257 lr 8.00e-03 tok/s 6,521
+[fit] step 425/611 loss 4.9306 lr 6.35e-03 tok/s 6,522
+[fit] step 450/611 loss 5.6044 lr 4.85e-03 tok/s 6,522
+[fit] step 475/611 loss 3.9594 lr 3.52e-03 tok/s 6,522
+[fit] step 500/611 loss 4.3620 lr 2.38e-03 tok/s 6,522
+[fit] step 525/611 loss 4.9009 lr 1.44e-03 tok/s 6,522
+[fit] step 550/611 loss 6.3968 lr 7.32e-04 tok/s 6,523
+[fit] step 575/611 loss 4.2140 lr 2.56e-04 tok/s 6,523
+[fit] step 600/611 loss 5.4714 lr 2.40e-05 tok/s 6,523
+[fit] saved /kaggle/working/fits/fit_Gbb_v2 in 3070s

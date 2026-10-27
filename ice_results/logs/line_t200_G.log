@@ -1,0 +1,49 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[gdn] backend=auto -> fla (rel_err=3.74e-07, grads_ok=True, state_ok=True)
+[linecomp] 1200 lines: repeat 228, reuse 721, novel 251
+[linecomp] G: cached decode matches the full forward (max |dlogit| 1.81e-05)
+[linecomp] G: 50/1200 (32s)
+[linecomp] G: 100/1200 (59s)
+[linecomp] G: 150/1200 (89s)
+[linecomp] G: 200/1200 (115s)
+[linecomp] G: 250/1200 (144s)
+[linecomp] G: 300/1200 (173s)
+[linecomp] G: 350/1200 (204s)
+[linecomp] G: 400/1200 (229s)
+[linecomp] G: 450/1200 (258s)
+[linecomp] G: 500/1200 (285s)
+[linecomp] G: 550/1200 (318s)
+[linecomp] G: 600/1200 (350s)
+[linecomp] G: 650/1200 (381s)
+[linecomp] G: 700/1200 (408s)
+[linecomp] G: 750/1200 (435s)
+[linecomp] G: 800/1200 (464s)
+[linecomp] G: 850/1200 (491s)
+[linecomp] G: 900/1200 (520s)
+[linecomp] G: 950/1200 (550s)
+[linecomp] G: 1000/1200 (579s)
+[linecomp] G: 1050/1200 (620s)
+[linecomp] G: 1100/1200 (649s)
+[linecomp] G: 1150/1200 (677s)
+[linecomp] G: 1200/1200 (706s)
+[linecomp] G: all em 0.094  repeat em 0.263  reuse em 0.043  novel em 0.088  (706s)
+
+line completion (greedy, exact match / edit similarity)
+metric                             G
+all/n                           1200
+all/em                         0.094
+all/edit_sim                   0.533
+all/prefix                     0.242
+repeat/n                         228
+repeat/em                      0.263
+repeat/edit_sim                0.609
+repeat/prefix                  0.416
+reuse/n                          721
+reuse/em                       0.043
+reuse/edit_sim                 0.501
+reuse/prefix                   0.180
+novel/n                          251
+novel/em                       0.088
+novel/edit_sim                 0.553
+novel/prefix                   0.265
+saved /kaggle/working/ice_results/line_t200_G.json

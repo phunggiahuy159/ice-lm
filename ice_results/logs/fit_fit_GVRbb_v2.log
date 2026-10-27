@@ -1,0 +1,32 @@
+[gdn] backend=auto -> fla (rel_err=3.74e-07, grads_ok=True, state_ok=True)
+[fit] init_from: dropped beta=0.1795; gamma clamped >= 1e-3 (3 slots)
+[fit] init_from /kaggle/working/inputs/runs/t200_G_VR: fresh ['R.weight', 'A.weight', 'N.weight', 'Q.weight']
+[fit] base=/kaggle/working/inputs/runs/t200_G_VR cand=vr v2=True(dnrq) listwise=0.25 verify=True trainable=2873 frozen=147728512
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[fit] unseen windows: data seed 1234, samples 48832..53715 of 102585 (the backbone consumed 48832)
+[fit] step 1/611 loss 5.3429 lr 1.50e-03 tok/s 5,608
+[fit] step 25/611 loss 5.2403 lr 2.99e-02 tok/s 6,401
+[fit] step 50/611 loss 1.8830 lr 2.95e-02 tok/s 6,439
+[fit] step 75/611 loss 5.3276 lr 2.89e-02 tok/s 6,456
+[fit] step 100/611 loss 3.0638 lr 2.81e-02 tok/s 6,458
+[fit] step 125/611 loss 5.0707 lr 2.70e-02 tok/s 6,461
+[fit] step 150/611 loss 3.0915 lr 2.58e-02 tok/s 6,463
+[fit] step 175/611 loss 3.6831 lr 2.43e-02 tok/s 6,464
+[fit] step 200/611 loss 3.7544 lr 2.27e-02 tok/s 6,465
+[fit] step 225/611 loss 3.3221 lr 2.10e-02 tok/s 6,465
+[fit] step 250/611 loss 4.3370 lr 1.92e-02 tok/s 6,466
+[fit] step 275/611 loss 4.8106 lr 1.73e-02 tok/s 6,468
+[fit] step 300/611 loss 4.0769 lr 1.54e-02 tok/s 6,468
+[fit] step 325/611 loss 3.9137 lr 1.35e-02 tok/s 6,469
+[fit] step 350/611 loss 5.1462 lr 1.16e-02 tok/s 6,470
+[fit] step 375/611 loss 1.8268 lr 9.75e-03 tok/s 6,470
+[fit] step 400/611 loss 4.7586 lr 8.00e-03 tok/s 6,471
+[fit] step 425/611 loss 4.8539 lr 6.35e-03 tok/s 6,471
+[fit] step 450/611 loss 5.5551 lr 4.85e-03 tok/s 6,471
+[fit] step 475/611 loss 3.9513 lr 3.52e-03 tok/s 6,472
+[fit] step 500/611 loss 4.3220 lr 2.38e-03 tok/s 6,472
+[fit] step 525/611 loss 4.8076 lr 1.44e-03 tok/s 6,471
+[fit] step 550/611 loss 6.3332 lr 7.32e-04 tok/s 6,472
+[fit] step 575/611 loss 4.1502 lr 2.56e-04 tok/s 6,473
+[fit] step 600/611 loss 5.4317 lr 2.40e-05 tok/s 6,474
+[fit] saved /kaggle/working/fits/fit_GVRbb_v2 in 3093s

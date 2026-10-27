@@ -1,0 +1,49 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[gdn] backend=auto -> fla (rel_err=3.74e-07, grads_ok=True, state_ok=True)
+[linecomp] 1200 lines: repeat 228, reuse 721, novel 251
+[linecomp] G+fit_vr2: cached decode matches the full forward (max |dlogit| 1.57e-05)
+[linecomp] G+fit_vr2: 50/1200 (37s)
+[linecomp] G+fit_vr2: 100/1200 (70s)
+[linecomp] G+fit_vr2: 150/1200 (104s)
+[linecomp] G+fit_vr2: 200/1200 (135s)
+[linecomp] G+fit_vr2: 250/1200 (167s)
+[linecomp] G+fit_vr2: 300/1200 (203s)
+[linecomp] G+fit_vr2: 350/1200 (241s)
+[linecomp] G+fit_vr2: 400/1200 (273s)
+[linecomp] G+fit_vr2: 450/1200 (308s)
+[linecomp] G+fit_vr2: 500/1200 (341s)
+[linecomp] G+fit_vr2: 550/1200 (377s)
+[linecomp] G+fit_vr2: 600/1200 (416s)
+[linecomp] G+fit_vr2: 650/1200 (453s)
+[linecomp] G+fit_vr2: 700/1200 (489s)
+[linecomp] G+fit_vr2: 750/1200 (522s)
+[linecomp] G+fit_vr2: 800/1200 (559s)
+[linecomp] G+fit_vr2: 850/1200 (593s)
+[linecomp] G+fit_vr2: 900/1200 (628s)
+[linecomp] G+fit_vr2: 950/1200 (663s)
+[linecomp] G+fit_vr2: 1000/1200 (697s)
+[linecomp] G+fit_vr2: 1050/1200 (745s)
+[linecomp] G+fit_vr2: 1100/1200 (782s)
+[linecomp] G+fit_vr2: 1150/1200 (815s)
+[linecomp] G+fit_vr2: 1200/1200 (850s)
+[linecomp] G+fit_vr2: all em 0.157  repeat em 0.636  reuse em 0.031  novel em 0.084  (850s)
+
+line completion (greedy, exact match / edit similarity)
+metric                     G+fit_vr2
+all/n                           1200
+all/em                         0.157
+all/edit_sim                   0.584
+all/prefix                     0.304
+repeat/n                         228
+repeat/em                      0.636
+repeat/edit_sim                0.783
+repeat/prefix                  0.709
+reuse/n                          721
+reuse/em                       0.031
+reuse/edit_sim                 0.529
+reuse/prefix                   0.192
+novel/n                          251
+novel/em                       0.084
+novel/edit_sim                 0.560
+novel/prefix                   0.259
+saved /kaggle/working/ice_results/line_fit_Gbb_v2.json
