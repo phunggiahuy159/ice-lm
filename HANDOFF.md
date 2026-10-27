@@ -3,6 +3,30 @@
 Repo: https://github.com/huypg-zenai/ice-lm (private, branch `main`). Local copy: `/Users/phunghuy/code/gstar/proposal_ice`.
 Runs, models and data live on Modal (see "Infrastructure"); this repo holds code, docs, logs and small result files.
 
+## 0. Round-2 status (27 Oct, 07:50 UTC+7): blocked on the Modal spend limit
+
+* **Done in round 2:**
+  * the judge's plan, `research/round2/decision2.md`;
+  * seed 2: G_VR beats B on 2 seeds (code −0.040 / −0.045), so seed 3 is skipped (`results_t200/README.md`);
+  * the rule oracle: "longest match wins" fails on real code;
+  * the G_MQA arm added to `config.py` (15 GDN + 1 MQA layer, 256 B/token);
+  * `scripts/fit_scorer.py`.
+* **At 07:08 workspace tien-phat140205 hit its billing-cycle spend limit.** Every new call now fails with
+  `ResourceExhaustedError: workspace billing cycle spend limit reached`. The limit killed both running jobs:
+  * the fitter gate: the refit finished and is saved (`/vol/runs/fit_GVRbb_vr/model_final.pt`), but its evaluation
+    did not run;
+  * G_MQA: killed at step 40 of 1526 (~$0.15 lost).
+
+  Logs: `research/round2/logs/`. Nothing else was run, and no other workspace was used.
+* **To resume once the budget is raised (profile run3):**
+  1. Evaluate the gate:
+     `spawn.py _gpu_cmd '["python scripts/evaluate.py --runs /vol/runs/fit_GVRbb_vr --data_dir /vol/data --val_batches 500 --n_task 50 --out /vol/results_fit_gate.json"]'`.
+     It must reproduce 1.690 ± 0.005.
+  2. Retrain G_MQA from scratch: `spawn.py _train '["140m","G_MQA",2e8,1,"","t200_G_MQA"]'`.
+  3. Run the ICE-V2 ladder (runs 2–5 and 8 of decision2.md) after the implementer's tests pass on Modal CPU.
+     Notes: `research/round2/impl_v2_notes.md`.
+  4. Remaining budget for this round: ≈ $29.
+
 ## 1. TL;DR
 
 * **ICE** = an exact in-context n-gram lookup on token IDs (CPU hash table, ~41 B/token, vs 2,048 B/token KV for
