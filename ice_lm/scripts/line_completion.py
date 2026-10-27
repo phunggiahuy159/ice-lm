@@ -164,6 +164,8 @@ def main():
         if items is None:
             items = build_items(tok, data, eos, nl, seq_len, a.windows, a.per_window, a.min_ctx, a.max_line,
                                 a.seed)
+            if not items:
+                raise SystemExit("no lines qualify: lower --min_ctx or use more --windows")
             print(f"[linecomp] {len(items)} lines: " + ", ".join(
                 f"{k} {sum(i['kind'] == k for i in items)}" for k in KINDS), flush=True)
         x0 = np.asarray(data[items[0]["window"] * seq_len: items[0]["window"] * seq_len + items[0]["start"]])

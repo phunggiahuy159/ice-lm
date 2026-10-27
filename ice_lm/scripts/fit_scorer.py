@@ -106,7 +106,8 @@ if a.syn_frac > 0:
 ds = SynMixWindows(a.data_dir, seq_len, cfg.ice_orders, True, 0.0, a.seed, 0, 1, start_index=0,
                    micro_batch=a.micro_batch, cand=a.cand, v2=a.v2, pool=pool, syn_frac=a.syn_frac)
 loader = DataLoader(ds, batch_size=a.micro_batch, collate_fn=collate, num_workers=a.num_workers,
-                    pin_memory=device.type == "cuda", persistent_workers=a.num_workers > 0, prefetch_factor=4)
+                    pin_memory=device.type == "cuda", persistent_workers=a.num_workers > 0,
+                    prefetch_factor=4 if a.num_workers > 0 else None)
 steps = math.ceil(a.tokens / (a.micro_batch * a.accum * seq_len))
 opt = torch.optim.Adam(params, lr=a.lr)
 model.train()
