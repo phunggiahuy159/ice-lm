@@ -106,6 +106,12 @@ Caveats (seed 1 section above): 200M tokens; 140M parameters.
   compact layout of `inference.ICEIndex.compact_bytes`. That layout is what a C/GPU index needs; it is not the
   size of the Python dicts used here.
 - Quality is measured at 4K, where the memory saving is 2.9×. The 12× is at 32K.
+- **Measured index** (`scripts/index_memory.py`, `research/round3/index_memory.json`). The compact layout was built
+  as real numpy arrays (power-of-two open-addressing tables) and every lookup was checked against the Python index:
+  - 82.0 / 82.0 / 90.0 B/token at 4K / 16K / 32K, plus a 250 KiB fixed order-1 table. The count above (64.7) assumes
+    an ideal load factor of 0.5.
+  - With the measured index: 3.8 vs 10.8 MiB per sequence at 4K (2.8×), 6.3 vs 66.8 MiB at 32K (11×).
+  - The Python dict index used in this repo takes 520–640 B/token (tracemalloc).
 
 ## Synthetic recall: the hybrid's 0.00 is mostly an artefact (27 Oct, CPU check)
 `tables.txt` reports B at about 0 on repeat and MQAR. Those tasks draw tokens uniformly from about 31K vocabulary

@@ -63,16 +63,19 @@ print to PDF; each slide prints as one 1920×1080 page. Wording follows `researc
      the wrong occurrence.
    - On real code, no fixed rule beats 0.07 where the lookup's top guess is wrong; the oracle is 0.34.
 6. **Memory.**
-   - At 4K, where quality is measured: 3.7 vs 10.8 MiB per sequence (2.9×). At 32K: 5.5 vs 66.8 MiB (12×).
-   - Growth is 65 vs 2,048 bytes per token. The 65 B is counted from the index's contents under a compact layout; the
-     Python index is larger.
+   - The compact index layout, built as real arrays (`scripts/index_memory.py`, `research/round3/index_memory.json`):
+     82 B/token at 4K and 90 at 32K, every lookup checked. The earlier count was 62–69, at an ideal load factor;
+     power-of-two hash tables add the rest.
+   - Per sequence: 3.8 vs 10.8 MiB at 4K (2.8×), where quality is measured; 6.3 vs 66.8 MiB at 32K (11×).
+   - The Python index used here takes 520–640 B/token. That is an implementation artefact, and still 3× below the
+     hybrid's KV cache.
    - Decode at 32K: 78.4 vs 86.4 tok/s (H100, `results_t200/benchmark_t200.json`).
 
 ## Likely questions
 - **"Is the hybrid undertrained?"** "Possibly. It repeats real text verbatim only about 60% of the time. The 3×
   longer run answers that."
-- **"Is 65 bytes measured?"** "It is counted from the index's contents under a compact layout. The Python index I
-  use is larger." Update this after the memory measurement (decision3 §4.3).
+- **"Is 65 bytes measured?"** "A compact array index, built and checked, takes 82–90 bytes per token, against
+  2,048 for the hybrid's KV cache. My Python prototype takes about 600; a C index would not."
 - **"What happens with ICE off?"** "On tokens with no match it beats both baselines, probably because of loss
   weighting. On copyable tokens it is worse: it specialises."
 - **"Synthetic recall?"** "With random rare tokens the hybrid scored 0, an artefact. On real text it is 60% vs 97%

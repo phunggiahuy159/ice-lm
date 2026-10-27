@@ -1,0 +1,92 @@
+[
+ {
+  "T": 4096,
+  "distinct": [
+   562,
+   1220,
+   1601,
+   1867,
+   2162,
+   2338
+  ],
+  "counted_total": 509532,
+  "counted_per_token": 61.8974609375,
+  "numpy_bytes": {
+   "tokens": 8192,
+   "table_1": 256000,
+   "table_2": 32768,
+   "table_3": 32768,
+   "table_4": 32768,
+   "table_6": 65536,
+   "table_8": 65536,
+   "chain_prev": 98304
+  },
+  "numpy_total": 591872,
+  "numpy_per_token": 82.0,
+  "numpy_per_token_incl_fixed": 144.5,
+  "python_bytes_now": 2129355,
+  "python_peak": 11957573,
+  "python_per_token": 519.862060546875,
+  "lookup_mismatches": 0
+ },
+ {
+  "T": 16384,
+  "distinct": [
+   1403,
+   4341,
+   6268,
+   7855,
+   9799,
+   11053
+  ],
+  "counted_total": 1311068,
+  "counted_per_token": 64.396240234375,
+  "numpy_bytes": {
+   "tokens": 32768,
+   "table_1": 256000,
+   "table_2": 131072,
+   "table_3": 131072,
+   "table_4": 131072,
+   "table_6": 262144,
+   "table_8": 262144,
+   "chain_prev": 393216
+  },
+  "numpy_total": 1599488,
+  "numpy_per_token": 82.0,
+  "numpy_per_token_incl_fixed": 97.625,
+  "python_bytes_now": 8925336,
+  "python_peak": 47569084,
+  "python_per_token": 544.75927734375,
+  "lookup_mismatches": 0
+ },
+ {
+  "T": 32768,
+  "distinct": [
+   2504,
+   9285,
+   14011,
+   17705,
+   21960,
+   24525
+  ],
+  "counted_total": 2507772,
+  "counted_per_token": 68.7186279296875,
+  "numpy_bytes": {
+   "tokens": 65536,
+   "table_1": 256000,
+   "table_2": 262144,
+   "table_3": 262144,
+   "table_4": 524288,
+   "table_6": 524288,
+   "table_8": 524288,
+   "chain_prev": 786432
+  },
+  "numpy_total": 3205120,
+  "numpy_per_token": 90.0,
+  "numpy_per_token_incl_fixed": 97.8125,
+  "python_bytes_now": 20927196,
+  "python_peak": 94908612,
+  "python_per_token": 638.6473388671875,
+  "lookup_mismatches": 0
+ }
+]
