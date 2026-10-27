@@ -1,6 +1,5 @@
 """Correctness tests. Run:  python -m pytest -q tests"""
 import os
-import re
 import sys
 import tempfile
 
@@ -13,27 +12,15 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from ice_lm.config import ARMS, build_configs, ice_param_count  # noqa: E402
 from ice_lm.data import TrainWindows, collate, make_example, make_synthetic_data, split_batch  # noqa: E402
 from ice_lm.gdn import gated_delta_rule_chunked, gated_delta_rule_recurrent  # noqa: E402
-from ice_lm.ice_features import (DEFAULT_ORDERS, SRC_KEY, V2_KEYS, V_KEYS, brute_force_successor,  # noqa: E402
-                                 compute_ice_features, n_occ_slots, n_slots, segments_from_eos, set_alpha_mask)
+from ice_lm.ice_features import (DEFAULT_ORDERS, V_KEYS, brute_force_successor, compute_ice_features,  # noqa: E402
+                                 n_slots, segments_from_eos, set_alpha_mask)
 from ice_lm.inference import ICEIndex, features_to_tensors, step_features_to_tensors  # noqa: E402
 from ice_lm.model import ICELM, kv_bytes_per_token, layer_plan  # noqa: E402
 
 # ICE-VR identifier anchors: odd token ids count as "alphabetic" in these tests
 ALPHA_TEST = np.arange(1 << 16) % 2 == 1
 set_alpha_mask(ALPHA_TEST)
-V_ARMS = ["G_V", "G_VR", "G_V_in", "G_V_nover", "C_V", "C_VR", "G_VR2"]
-# ICE-V2 scorers as fit_scorer.py builds them (overrides of an old arm): "<arm>+v2" / "+v2dq" / "+v2nolist"
-V2_ARMS = ["G_VR2", "G_V+v2", "G_VR+v2dq", "C_VR+v2nolist"]
-
-
-def _cfgs(preset, arm, **kw):
-    """build_configs, plus the V2 variants of V2_ARMS (ice_v2 + listwise 0.25 unless 'nolist'; 'dq': tables d, q)."""
-    if "+" in arm:
-        arm, var = arm.split("+")
-        kw.update(ice_v2=True, ice_v_listwise=0.0 if "nolist" in var else 0.25)
-        if var.startswith("v2") and var[2:] and var[2:] != "nolist":
-            kw["ice_v2_feats"] = var[2:]
-    return build_configs(preset, arm, **kw)
+V_ARMS = ["G_V", "G_VR", "G_V_in", "G_V_nover", "C_V", "C_VR"]
 
 
 # ------------------------------------------------------------------ ICE features
@@ -86,15 +73,12 @@ def _planted_sequence(seed, T=220, vocab=6, eos=0):
     return x
 
 
-@pytest.mark.parametrize("cand", ["", "v", "vr", "v+v2", "vr+v2"])
+@pytest.mark.parametrize("cand", ["", "v", "vr"])
 @pytest.mark.parametrize("seed", range(6))
 def test_incremental_index_matches_batch_features(seed, cand):
-    """Decode (step / extend / prefill) == batch features, incl. the V2 slot features and source positions."""
     x = _planted_sequence(seed)
-    cand, v2 = cand.split("+")[0], cand.endswith("+v2")
-    ref = compute_ice_features(x, segments_from_eos(x, 0), DEFAULT_ORDERS, cand, v2)
-    assert (set(V2_KEYS) | {SRC_KEY} <= set(ref)) == v2
-    idx = ICEIndex(eos_id=0, vocab_size=6, cand=cand, v2=v2)
+    ref = compute_ice_features(x, segments_from_eos(x, 0), DEFAULT_ORDERS, cand)
+    idx = ICEIndex(eos_id=0, vocab_size=6, cand=cand)
     got = idx.extend(x[:90].tolist())
     rest = [idx.step(int(t)) for t in x[90:]]
     for k, v in ref.items():
@@ -102,7 +86,7 @@ def test_incremental_index_matches_batch_features(seed, cand):
         assert (inc == v).all(), k
     assert idx.compact_bytes()["total"] > 0
     # vectorized prompt processing gives the same features and the same state to continue from
-    idx2 = ICEIndex(eos_id=0, vocab_size=6, cand=cand, v2=v2)
+    idx2 = ICEIndex(eos_id=0, vocab_size=6, cand=cand)
     got2 = idx2.prefill(x[:90])
     rest2 = [idx2.step(int(t)) for t in x[90:]]
     for k, v in ref.items():
@@ -132,7 +116,7 @@ def _brute_candidates(x, seg, cand, orders=DEFAULT_ORDERS, alpha=ALPHA_TEST):
         return min(int(np.floor(np.log2(d))) + 1, 17)
 
     K = n_slots(cand, len(orders))
-    out = {k: np.full((K, T), -1 if k in ("ice_v_tok", SRC_KEY) else 0) for k in V_KEYS + (SRC_KEY,)}
+    out = {k: np.full((K, T), -1 if k == "ice_v_tok" else 0) for k in V_KEYS}
     for t in range(T):
         slots, last_len = [], []
         for n in orders:
@@ -153,24 +137,6 @@ def _brute_candidates(x, seg, cand, orders=DEFAULT_ORDERS, alpha=ALPHA_TEST):
             if sl is not None:
                 assert sl[0] <= t
                 out["ice_v_tok"][k, t], out["ice_v_len"][k, t], out["ice_v_dist"][k, t] = x[sl[0]], sl[1], sl[2]
-                out[SRC_KEY][k, t] = sl[0]
-    return out
-
-
-def _brute_v2(tok, ln, src, n_occ):
-    """Slow reference for the V2 slot features, straight from decision2.md section 2 (position by position)."""
-    K, T = tok.shape
-    out = {k: np.zeros((K, T), dtype=np.int64) for k in V2_KEYS}
-    for t in range(T):
-        slots = [(k, int(tok[k, t]), int(ln[k, t]), int(src[k, t])) for k in range(K) if tok[k, t] >= 0]
-        newest = {}
-        for _, c, _, i in slots:
-            newest[c] = max(newest.get(c, -1), i)
-        for k, c, l, i in slots:
-            comp = [l2 for k2, c2, l2, _ in slots if k2 < n_occ and c2 != c]
-            out["ice_v_delta"][k, t] = 17 if not comp else 8 + min(8, max(-8, l - max(comp)))
-            out["ice_v_cnt"][k, t] = min(6, max(1, sum(c2 == c for _, c2, _, _ in slots)))
-            out["ice_v_rec"][k, t] = min(3, sum(m > newest[c] for m in newest.values()))
     return out
 
 
@@ -186,15 +152,6 @@ def test_candidates_match_brute_force(seed, cand):
         assert (f[k] == ref[k]).all(), k
     base = compute_ice_features(x, seg)                    # the ICE features themselves are unchanged
     assert all((base[k] == f[k]).all() for k in base)
-    # V2: source positions and slot features vs the definition; the V slots themselves are unchanged
-    f2 = compute_ice_features(x, seg, DEFAULT_ORDERS, cand, v2=True)
-    assert all((f2[k] == f[k]).all() for k in f)
-    assert (f2[SRC_KEY] == ref[SRC_KEY]).all()
-    ref2 = _brute_v2(f2["ice_v_tok"], f2["ice_v_len"], f2[SRC_KEY], n_occ_slots(cand, len(DEFAULT_ORDERS)))
-    for k in V2_KEYS:
-        assert (f2[k] == ref2[k]).all(), k
-    has = f2["ice_v_tok"] >= 0
-    assert (f2["ice_v_delta"][has] != 17).any() and (f2["ice_v_rec"][has] > 0).any() and (f2["ice_v_cnt"] > 1).any()
 
 
 def test_anchor_mask_must_be_set():
@@ -257,7 +214,7 @@ def _batch(cfg, B=2, T=64, seed=0, hi=None):
     for _ in range(B):
         w = rng.integers(1, hi or cfg.vocab_size, size=T + 1)
         w[T // 2: T // 2 + 10] = w[3:13]      # create a copy
-        ex = make_example(w, None, cfg.ice_orders, cfg.ice, cfg.ice_v, cfg.ice_v2)
+        ex = make_example(w, None, cfg.ice_orders, cfg.ice, cfg.ice_v)
         ex["ice_keep"] = torch.tensor(1.0)
         exs.append(ex)
     return collate(exs)
@@ -297,9 +254,9 @@ def test_chunked_training_loss_matches_full(arm):
             assert torch.allclose(a, b, atol=1e-5, rtol=1e-4)
 
 
-@pytest.mark.parametrize("arm", ["C", "C_notrust", "C_in", "C_out", "E"] + V_ARMS + V2_ARMS)
+@pytest.mark.parametrize("arm", ["C", "C_notrust", "C_in", "C_out", "E"] + V_ARMS)
 def test_ice_param_count(arm):
-    mcfg, _ = _cfgs("smoke", arm, vocab_size=300)
+    mcfg, _ = build_configs("smoke", arm, vocab_size=300)
     assert ice_param_count(mcfg) == ICELM(mcfg).ice_params()
 
 
@@ -402,11 +359,11 @@ def test_train_windows_cover_data_once_per_pass():
         assert len(set(first)) == n_win              # no window repeats within a pass
 
 
-@pytest.mark.parametrize("arm", ["A", "B", "C", "D", "E", "F", "C_notrust"] + V_ARMS + V2_ARMS[1:])
+@pytest.mark.parametrize("arm", ["A", "B", "C", "D", "E", "F", "C_notrust"] + V_ARMS)
 def test_cached_decoding_matches_full_forward(arm):
     """prefill (37) + chunked prefill (50) + single decode steps == one full forward pass, every arm."""
     eos = 0
-    mcfg, _ = _cfgs("smoke", arm, vocab_size=64)
+    mcfg, _ = build_configs("smoke", arm, vocab_size=64)
     model = ICELM(mcfg).eval()
     with torch.no_grad():
         for p in model.parameters():
@@ -415,12 +372,12 @@ def test_cached_decoding_matches_full_forward(arm):
     x = rng.integers(1, 64, size=150)
     x[90:140] = x[10:60]
     x[[30, 100]] = eos
-    feats = compute_ice_features(x, segments_from_eos(x, eos), mcfg.ice_orders, mcfg.ice_v, mcfg.ice_v2)
+    feats = compute_ice_features(x, segments_from_eos(x, eos), mcfg.ice_orders, mcfg.ice_v)
     ice = {k: torch.from_numpy(feats[k])[None] for k in feats} if mcfg.ice else None
     with torch.no_grad():
         full = model(torch.from_numpy(x)[None], ice=ice)                   # [1,T,V]
         cache = model.allocate_cache(1, 160, "cpu", torch.float32)
-        idx = ICEIndex(mcfg.ice_orders, eos_id=eos, vocab_size=64, cand=mcfg.ice_v, v2=mcfg.ice_v2)
+        idx = ICEIndex(mcfg.ice_orders, eos_id=eos, vocab_size=64, cand=mcfg.ice_v)
         outs = []
         for a, b in ((0, 37), (37, 87)):
             f = features_to_tensors([idx.extend(x[a:b].tolist())], "cpu") if mcfg.ice else None
@@ -433,7 +390,7 @@ def test_cached_decoding_matches_full_forward(arm):
     assert torch.allclose(inc, full, atol=1e-4, rtol=1e-4), (inc - full).abs().max()
 
 
-@pytest.mark.parametrize("arm", ["B", "E", "G_VR", "G_VR2"])
+@pytest.mark.parametrize("arm", ["B", "E", "G_VR"])
 def test_cached_decoding_batch2(arm):
     """Two different sequences decoded together (vectorized prompt prefill + steps) == full forward per row."""
     eos = 0
@@ -449,12 +406,12 @@ def test_cached_decoding_batch2(arm):
     fulls = []
     with torch.no_grad():
         for x in xs:
-            feats = compute_ice_features(x, segments_from_eos(x, eos), mcfg.ice_orders, mcfg.ice_v, mcfg.ice_v2)
+            feats = compute_ice_features(x, segments_from_eos(x, eos), mcfg.ice_orders, mcfg.ice_v)
             ice = {k: torch.from_numpy(feats[k])[None] for k in feats} if mcfg.ice else None
             fulls.append(model(torch.from_numpy(x)[None], ice=ice))
         full = torch.cat(fulls)
         cache = model.allocate_cache(2, 120, "cpu", torch.float32)
-        idx = [ICEIndex(mcfg.ice_orders, eos_id=eos, vocab_size=64, cand=mcfg.ice_v, v2=mcfg.ice_v2) for _ in range(2)]
+        idx = [ICEIndex(mcfg.ice_orders, eos_id=eos, vocab_size=64, cand=mcfg.ice_v) for _ in range(2)]
         f = features_to_tensors([ix.prefill(x[:64]) for ix, x in zip(idx, xs)], "cpu") if mcfg.ice else None
         outs = [model.forward_cached(torch.from_numpy(xs[:, :64]), cache, f, last_only=False)]
         for t in range(64, 120):
@@ -468,7 +425,7 @@ def test_cached_decoding_batch2(arm):
 def _v_model(arm, vocab=300, scale=0.3, seed=0):
     """A V model with non-trivial pointer weights (so candidates carry real mass)."""
     torch.manual_seed(seed)
-    mcfg, _ = _cfgs("smoke", arm, vocab_size=vocab)
+    mcfg, _ = build_configs("smoke", arm, vocab_size=vocab)
     model = ICELM(mcfg).eval()
     with torch.no_grad():
         for p in model.parameters():
@@ -500,7 +457,7 @@ def test_v_arm_configs():
     assert ice_param_count(build_configs("140m", "G_V")[0]) < 2000   # ~1.3K parameters at 140m
 
 
-@pytest.mark.parametrize("arm", ["G_V", "G_VR"] + V2_ARMS)
+@pytest.mark.parametrize("arm", ["G_V", "G_VR"])
 def test_v_no_leakage(arm):
     """Perturb x[200:] (features recomputed): log-probs at positions <= 199 must be bit-identical."""
     mcfg, model = _v_model(arm)
@@ -510,8 +467,7 @@ def test_v_no_leakage(arm):
     outs, offs = [], []
     with torch.no_grad():
         for seq in (w, w2):
-            b = collate([dict(make_example(seq, None, mcfg.ice_orders, True, mcfg.ice_v, mcfg.ice_v2),
-                              ice_keep=torch.tensor(1.0))])
+            b = collate([dict(make_example(seq, None, mcfg.ice_orders, True, mcfg.ice_v), ice_keep=torch.tensor(1.0))])
             x, _, ice, keep, _ = split_batch(b, "cpu")
             outs.append(model(x, ice=ice, ice_keep=keep))
             offs.append(model(x, ice=ice, ice_keep=torch.zeros(1)))
@@ -519,7 +475,7 @@ def test_v_no_leakage(arm):
     assert not torch.equal(outs[0][:, :200], offs[0][:, :200])      # the pointer is active
 
 
-@pytest.mark.parametrize("arm", ["G_V", "G_VR", "G_V_in"] + V2_ARMS)
+@pytest.mark.parametrize("arm", ["G_V", "G_VR", "G_V_in"])
 def test_v_keep0_is_backbone(arm):
     """keep=0 masks every slot: the output is exactly log_softmax(z). keep=1: a normalized distribution."""
     mcfg, model = _v_model(arm)
@@ -535,7 +491,7 @@ def test_v_keep0_is_backbone(arm):
     assert not torch.allclose(on, off, atol=1e-3)
 
 
-@pytest.mark.parametrize("arm", ["G_V", "G_VR"] + V2_ARMS)
+@pytest.mark.parametrize("arm", ["G_V", "G_VR"])
 def test_v_mixture_matches_sequential_definition(arm):
     """The eval mixture equals out = log pi_0 + l, then out[c_k] = logaddexp(out[c_k], log pi_k) slot by slot
     (duplicate candidates included)."""
@@ -548,9 +504,8 @@ def test_v_mixture_matches_sequential_definition(arm):
         ls = model(x, ice=ice, ice_keep=torch.zeros(x.shape[0]))
         hook.remove()
         h = hs[0]                                       # h_last
-        feats = model._out_feats(ice)
-        tok = feats[0]
-        lp, _ = model.ice_ptr.log_pi(h, ls, keep, *feats)
+        tok, ln, dist = (ice[k].transpose(1, 2) for k in V_KEYS)
+        lp, _ = model.ice_ptr.log_pi(h, ls, keep, tok, ln, dist)
         ref = ls + lp[..., :1]
         for k in range(tok.shape[-1]):
             idx = tok[..., k:k + 1].clamp(min=0)
@@ -560,10 +515,9 @@ def test_v_mixture_matches_sequential_definition(arm):
     assert torch.allclose(mix, ref, atol=1e-5)
 
 
-@pytest.mark.parametrize("arm", ["G_V", "G_VR", "G_V_nover", "G_V_in"] + V2_ARMS)
+@pytest.mark.parametrize("arm", ["G_V", "G_VR", "G_V_nover", "G_V_in"])
 def test_v_training_loss_is_mixture_nll(arm):
-    """Chunked training loss == mean(-log p_mix(y)) + aux * CE(z, y) of the eval paths (+ lambda * the listwise
-    slot CE, computed here position by position from its definition), values and gradients."""
+    """Chunked training loss == mean(-log p_mix(y)) + aux * CE(z, y) of the eval paths, values and gradients."""
     mcfg, model = _v_model(arm, scale=0.1)
     model.train()
     x, y, ice, keep, _ = split_batch(_batch(mcfg, T=100, hi=20), "cpu")
@@ -573,17 +527,10 @@ def test_v_training_loss_is_mixture_nll(arm):
     g_c = torch.autograd.grad(loss_c, params, allow_unused=True)
     mix = model(x, ice=ice, ice_keep=keep)
     ptr, model.ice_ptr = model.ice_ptr, None
-    hs = []
-    hook = model.norm.register_forward_hook(lambda mod, inp, out: hs.append(out))
     z = model(x, ice=ice, ice_keep=keep)                 # backbone logits (G_V_in: with its input side)
-    hook.remove()
     model.ice_ptr = ptr
     loss_f = (-mix.gather(-1, y.unsqueeze(-1)).mean()
               + mcfg.ice_v_aux * torch.nn.functional.cross_entropy(z.reshape(-1, z.size(-1)), y.reshape(-1)))
-    if mcfg.ice_v_listwise:
-        lw = _listwise_ref(model, hs[0], z, ice, keep, y)
-        assert (lw > 0).sum() > 10                       # the term is active at many positions
-        loss_f = loss_f + mcfg.ice_v_listwise * lw.sum() / y.numel()
     g_f = torch.autograd.grad(loss_f, params, allow_unused=True)
     assert torch.allclose(loss_c, loss_f, atol=1e-5)
     for a, b in zip(g_c, g_f):
@@ -591,124 +538,3 @@ def test_v_training_loss_is_mixture_nll(arm):
         if a is not None:
             assert torch.isfinite(a).all()
             assert torch.allclose(a, b, atol=1e-5, rtol=1e-4)
-
-
-def _listwise_ref(model, h, z, ice, keep, y):
-    """Listwise slot CE by its definition: -log sum_{c_k = y} softmax_{valid slots}(s)_k at positions where y is
-    in the slots and they hold >= 2 distinct tokens, else 0 [B,T]. h = h_last, z = backbone logits."""
-    feats = model._out_feats(ice)
-    lp, valid = model.ice_ptr.log_pi(h, z.log_softmax(-1).detach(), keep, *feats)
-    tok = feats[0]
-    out = torch.zeros(y.shape)
-    for b in range(y.shape[0]):
-        for t in range(y.shape[1]):
-            ks = [k for k in range(tok.shape[-1]) if valid[b, t, k]]
-            toks = {int(tok[b, t, k]) for k in ks}
-            if len(toks) >= 2 and int(y[b, t]) in toks:
-                p = lp[b, t, 1:][ks].softmax(-1)                         # softmax over the valid slots
-                out[b, t] = -torch.log(sum(p[i] for i, k in enumerate(ks) if int(tok[b, t, k]) == int(y[b, t])))
-    return out
-
-
-# ------------------------------------------------------------------ ICE-V2
-def test_v2_q_rank_matches_definition():
-    """q_k = #distinct OTHER slot tokens with a strictly larger backbone log-prob, clipped to 2."""
-    from ice_lm.model import ICEPointer
-    g = torch.Generator().manual_seed(0)
-    tok = torch.randint(-1, 6, (3, 40, 9), generator=g)
-    ell = torch.randn(3, 40, 10, generator=g).round(decimals=1)            # ties between tokens happen
-    ellk = ell.gather(-1, tok.clamp(min=0))
-    q = ICEPointer.q_rank(ellk, tok)
-    for b in range(3):
-        for t in range(40):
-            toks = {int(c) for c in tok[b, t] if c >= 0}
-            for k in range(9):
-                if tok[b, t, k] >= 0:
-                    want = min(2, sum(float(ell[b, t, c]) > float(ell[b, t, tok[b, t, k]]) for c in toks))
-                    assert int(q[b, t, k]) == want
-
-
-def test_v2_starts_as_the_v_scorer():
-    """Zero V2 tables + gamma~ = softplus^-1(gamma) (gamma > 0, beta = 0) reproduce the old VR scorer's mixture
-    (fit_scorer.py --init_from); a fresh V2 pointer has zero tables, gamma = 0.3 and no beta; old pointers keep
-    exactly their state-dict keys."""
-    mcfg, old = _v_model("G_VR", scale=0.3)
-    with torch.no_grad():
-        old.ice_ptr.gamma.abs_().add_(0.05)
-        old.ice_ptr.beta.zero_()
-    m2, _ = _cfgs("smoke", "G_VR+v2", vocab_size=300)
-    new = ICELM(m2).eval()
-    p2 = new.ice_ptr
-    assert sorted(k for k in old.ice_ptr.state_dict()) == ["D.weight", "L.weight", "b.weight", "beta", "c0", "gamma",
-                                                           "norm.weight", "w.weight"]
-    assert sorted(p2.state_dict()) == ["A.weight", "D.weight", "L.weight", "N.weight", "Q.weight", "R.weight",
-                                       "b.weight", "c0", "gamma_t", "norm.weight", "w.weight"]
-    assert all((getattr(p2, n).weight == 0).all() for n in "RANQ")
-    assert torch.allclose(torch.nn.functional.softplus(p2.gamma_t), torch.full((p2.K,), 0.3))
-    sd = {k: v for k, v in old.state_dict().items() if not k.startswith("ice_ptr.")}
-    ptr = {k[len("ice_ptr."):]: v for k, v in old.state_dict().items() if k.startswith("ice_ptr.")}
-    ptr["gamma_t"] = torch.log(torch.expm1(ptr.pop("gamma")))
-    ptr.pop("beta")
-    new.load_state_dict(sd, strict=False)
-    missing, unexpected = new.ice_ptr.load_state_dict(ptr, strict=False)
-    assert not unexpected and sorted(missing) == ["A.weight", "N.weight", "Q.weight", "R.weight"]
-    b_old = _batch(mcfg, T=96, hi=20)
-    b_new = _batch(m2, T=96, hi=20)
-    assert torch.equal(b_old["input_ids"], b_new["input_ids"])
-    with torch.no_grad():
-        a = old(*split_batch(b_old, "cpu")[:1], ice=split_batch(b_old, "cpu")[2], ice_keep=torch.ones(2))
-        b = new(*split_batch(b_new, "cpu")[:1], ice=split_batch(b_new, "cpu")[2], ice_keep=torch.ones(2))
-    assert torch.allclose(a, b, atol=1e-5), (a - b).abs().max()
-
-
-class _CharTok:
-    """Offline stand-in for a tokenizer (tests only): one token per character, digits split, like Llama."""
-
-    def __call__(self, text, add_special_tokens=False):
-        return {"input_ids": [min(ord(c), 250) + 3 for c in text]}
-
-    def decode(self, ids):
-        return "".join(chr(i - 3) for i in ids)
-
-
-def test_syn_templates_disjoint_and_scored_on_deciding_digit():
-    from ice_lm import coderecall
-    from ice_lm.syn_conflicts import FAMILIES, FIT_FAMILIES, HELDOUT_FAMILIES, make_syn_item
-    assert not set(FIT_FAMILIES) & set(HELDOUT_FAMILIES)
-    words = coderecall.KEYS + coderecall.SERVERS + coderecall.CONSTS + coderecall.MIGRATIONS   # CodeRecall's names
-    syntax = ["Server(", "settings", "config[", ".update(", "os.environ", "Migration("]          # and its syntax
-    tok, rng = _CharTok(), np.random.default_rng(0)
-    filler = np.array([tok("x = 1\n")["input_ids"] * 400]).ravel()
-    for fam in FAMILIES:
-        for _ in range(20):
-            parts, ans = make_syn_item(fam, rng, 8)
-            text = "".join(p for p in parts if p is not None)
-            hits = [w for w in words if re.search(rf"\b{w}\b", text)] + [m for m in syntax if m in text]
-            assert not hits, (fam, hits)
-            val = ans.strip()
-            assert len(val) == 4 and val.isdigit() and text.count(val) == 1
-            key = re.findall(r"[A-Za-z_]+", parts[-1])[-1]          # the queried key: >= 3 records / writes
-            assert text.count(key) >= 4, (fam, key, text)
-        seqs, spans, decide = coderecall.build_items(tok, np.random.default_rng(1), fam, 5, 64, filler, 0,
-                                                     make=make_syn_item)
-        for sq, (a, b), d in zip(seqs, spans, decide):
-            assert d == a and tok.decode(sq[a:b]).isdigit() and b - a == 4
-
-
-def test_syn_fit_windows():
-    from ice_lm.syn_conflicts import SynMixWindows, item_pool
-    tok = _CharTok()
-    pool = item_pool(tok, 30, seed=0)
-    assert len(pool) == 30 and all(p is None or isinstance(p, list) for it in pool for p in it)
-    with tempfile.TemporaryDirectory() as d:
-        make_synthetic_data(d, train_tokens=50_000, val_tokens=5_000)
-        ds = SynMixWindows(d, 256, DEFAULT_ORDERS, True, 0.0, seed=7, cand="vr", v2=True, pool=pool, syn_frac=0.5)
-        it = iter(ds)
-        exs = [next(it) for _ in range(12)]
-        data = np.memmap(os.path.join(d, "train.bin"), dtype=np.uint16, mode="r")
-        plain = TrainWindows(d, 256, DEFAULT_ORDERS, True, 0.0, seed=7, cand="vr", v2=True)
-        n_syn = sum(not torch.equal(e["input_ids"], plain.sample(data, i, {})["input_ids"]) for i, e in enumerate(exs))
-        assert 2 <= n_syn <= 10
-        for e in exs:
-            assert e["input_ids"].shape == (256,) and all(k in e for k in V2_KEYS)
-            assert (e["ice_v_tok"] < 512).all() and (e["ice_v_tok"] >= 0).any()

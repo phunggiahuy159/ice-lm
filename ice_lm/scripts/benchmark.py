@@ -108,7 +108,7 @@ def bench(arm, model, T, steps=None):
     base = mem()
     cache = model.allocate_cache(B, T + steps, device, dtype)
     cache_b = cache.nbytes()
-    idx = [ICEIndex(cfg.ice_orders, eos, cfg.vocab_size, cfg.ice_v, cfg.ice_v2) for _ in range(B)] if cfg.ice else None
+    idx = [ICEIndex(cfg.ice_orders, eos, cfg.vocab_size, cfg.ice_v) for _ in range(B)] if cfg.ice else None
 
     # ICE prompt processing (CPU, vectorized), timed on its own
     ice_prefill_s, feats = 0.0, None

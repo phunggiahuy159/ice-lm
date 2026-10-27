@@ -10,9 +10,6 @@ meaningful for arms trained with ICE-dropout (not C_nodrop, for which keep = 0 i
 
 CodeRecall is reported on the deciding digit (see ice_lm/coderecall.py) with paired bootstrap 95% intervals
 for the difference to the reference arm (B if present): every arm scores identical items.
-
---n_syn N adds the synthetic conflict / override templates of ice_lm/syn_conflicts.py (fresh items of the FIT
-families and the HELD-OUT perturbed families, deciding digit), the evaluation of the "task-supervised" V2+syn fits.
 """
 import argparse
 import json
@@ -26,7 +23,6 @@ import numpy as np  # noqa: E402
 import torch  # noqa: E402
 
 from ice_lm.coderecall import CATEGORIES, run_coderecall, summarize  # noqa: E402
-from ice_lm.syn_conflicts import FAMILIES, run_syn_eval, summarize_syn  # noqa: E402
 from ice_lm.config import model_config_from_dict  # noqa: E402
 from ice_lm.data import alpha_mask_for_data, load_meta, open_tokens  # noqa: E402
 from ice_lm.evals import eval_loss_splits, run_synthetic_tasks, uses_ice  # noqa: E402
@@ -48,8 +44,6 @@ ap.add_argument("--n_task", type=int, default=50, help="examples per synthetic t
 ap.add_argument("--coderecall_gaps", type=int, nargs="+", default=[256, 1024, 3072],
                 help="total filler tokens per item; keep below the training seq_len")
 ap.add_argument("--n_coderecall", type=int, default=100, help="items per CodeRecall category and gap")
-ap.add_argument("--n_syn", type=int, default=0, help="items per synthetic template family and gap (0 = off)")
-ap.add_argument("--syn_gaps", type=int, nargs="+", default=[256, 1024])
 ap.add_argument("--reference", default="B", help="arm used for paired differences / excess follow rate")
 ap.add_argument("--no_ice_off", action="store_true", help="skip the ICE-switched-off control")
 ap.add_argument("--precision", default="auto")
@@ -73,9 +67,6 @@ def evaluate(model, seq_len, keep):
     if tok is not None:
         res.update(run_coderecall(model, tok, open_tokens(a.data_dir, "val_code"), meta["eos_id"], device,
                                   amp_dtype, tuple(a.coderecall_gaps), a.n_coderecall, ice_keep=keep))
-        if a.n_syn:
-            res.update(run_syn_eval(model, tok, open_tokens(a.data_dir, "val_code"), meta["eos_id"], device,
-                                    amp_dtype, tuple(a.syn_gaps), a.n_syn, ice_keep=keep))
     return res
 
 
@@ -184,14 +175,8 @@ if tok is not None:
                 m, lo, hi = paired_diff(xs, ys)
                 cells.append(f"{m:+.3f} [{lo:+.3f},{hi:+.3f}]")
             print(cat.ljust(16) + "".join(c.rjust(26) for c in cells))
-if tok is not None and a.n_syn:
-    for r in all_res.values():
-        for fam, v in summarize_syn(r, "dec_acc").items():
-            r[f"syn/{fam}"] = v
-    table("synthetic conflict / override templates (task-supervised fits): deciding-digit accuracy",
-          [(f, f"syn/{f}") for f in FAMILIES + ("fit_mean", "heldout_mean")])
 table("synthetic / needle tasks", [(k, k) for k in next(iter(all_res.values()))
-                                   if k.endswith(("/acc", "/em")) and not k.startswith(("coderecall/", "syn/"))])
+                                   if k.endswith(("/acc", "/em")) and not k.startswith("coderecall/")])
 with open(a.out, "w") as f:
     json.dump(all_res, f, indent=2)
 print(f"\nsaved {a.out}")

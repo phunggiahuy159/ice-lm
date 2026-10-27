@@ -43,7 +43,7 @@ def eval_loss_splits(model, data_dir: str, seq_len: int, batch_size: int, n_batc
         tot = {g: [0.0, 0, 0] for g in groups}          # loss sum, count, correct
         follow = 0
         for batch in val_batches(data_dir, split, seq_len, batch_size, n_batches, model.cfg.ice_orders, with_ice,
-                                 model.cfg.ice_v, model.cfg.ice_v2):
+                                 model.cfg.ice_v):
             x, y, ice, keep, mlen, st = split_batch(batch, device, with_stats=True)
             if keep is not None:
                 keep = torch.full_like(keep, float(ice_keep))
@@ -94,9 +94,8 @@ def score_answers(model, seqs: List[List[int]], answer_spans: List, device, amp_
     for i_item, (seq, spans) in enumerate(zip(seqs, answer_spans)):
         spans = [spans] if isinstance(spans, tuple) else list(spans)
         x = torch.tensor(seq[:-1], device=device)[None]
-        f = compute_ice_features(np.array(seq[:-1]), None, model.cfg.ice_orders, model.cfg.ice_v if with_ice else "",
-                                 model.cfg.ice_v2)
-        ice = ({k: torch.from_numpy(f[k]).to(device)[None] for k in model_ice_keys(model.cfg.ice_v, model.cfg.ice_v2)}
+        f = compute_ice_features(np.array(seq[:-1]), None, model.cfg.ice_orders, model.cfg.ice_v if with_ice else "")
+        ice = ({k: torch.from_numpy(f[k]).to(device)[None] for k in model_ice_keys(model.cfg.ice_v)}
                if with_ice else None)
         keep = torch.full((1,), float(ice_keep), device=device)
         with _autocast(device, amp_dtype):

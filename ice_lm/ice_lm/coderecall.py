@@ -154,16 +154,15 @@ def _encoder(tok):
 
 
 def build_items(tok, rng, category: str, n: int, gap_tokens: int, filler: np.ndarray, eos_id: int,
-                n_distract: int = 8, make=None):
+                n_distract: int = 8):
     """-> (seqs, spans, deciding positions). Gaps are filled with real code (EOS removed). The answer span covers
     the digits only (a leading "▁" token, if any, is moved into the prompt); the deciding position is the
-    first digit (last digit for `increment`). make(category, rng, n_distract) -> (parts, answer) replaces
-    make_item (other template families, ice_lm/syn_conflicts.py)."""
+    first digit (last digit for `increment`)."""
     enc, n_nl = _encoder(tok)
     nl = tok("\n", add_special_tokens=False)["input_ids"]
     seqs, spans, decide = [], [], []
     for _ in range(n):
-        parts, answer = (make or make_item)(category, rng, n_distract)
+        parts, answer = make_item(category, rng, n_distract)
         n_gaps = max(1, sum(p is None for p in parts))
         g = gap_tokens // n_gaps
         ids: List[int] = []

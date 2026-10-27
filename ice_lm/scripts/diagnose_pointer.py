@@ -34,7 +34,7 @@ from ice_lm.coderecall import CATEGORIES, build_items  # noqa: E402
 from ice_lm.config import model_config_from_dict  # noqa: E402
 from ice_lm.data import alpha_mask_for_data, load_meta, model_ice_keys, open_tokens  # noqa: E402
 from ice_lm.evals import _autocast  # noqa: E402
-from ice_lm.ice_features import (CHAIN_OCC, V2_KEYS, V_KEYS, _prev_occurrence, compute_ice_features,  # noqa: E402
+from ice_lm.ice_features import (CHAIN_OCC, V_KEYS, _prev_occurrence, compute_ice_features,  # noqa: E402
                                  segments_from_eos, set_alpha_mask)
 from ice_lm.model import ICELM, MAX_MATCH, V_DIST_MAX  # noqa: E402
 from ice_lm.utils import pick_precision  # noqa: E402
@@ -123,13 +123,11 @@ def slot_meta(K, orders=(1, 2, 3, 4, 6, 8)):
 
 def ice_tensors(f, model):
     cand = model.cfg.ice_v
-    keys = model_ice_keys(cand, model.cfg.ice_v2)
+    keys = model_ice_keys(cand)
     K = model.ice_ptr.K if model.ice_ptr is not None else None
     d = {}
     for k in keys:
         v = f[k]
-        if k in V2_KEYS:     # functions of the whole slot set: only valid for the VR set they were computed on
-            assert v.shape[0] == K, f"{k}: V2 features of a V model need cand='v' features"
         if k in V_KEYS:
             v = v[:K]
         d[k] = torch.from_numpy(np.ascontiguousarray(v)).to(dev)[None]
@@ -349,7 +347,7 @@ def run_items(cat, seqs, decide, labels, gid, n_ex):
         x = np.asarray(seq[:-1], dtype=np.int64)
         if len(x) < a.seq_len:      # right-pad to one fixed shape (no kernel re-tuning per length); all causal
             x = np.concatenate([x, np.full(a.seq_len - len(x), EOS, dtype=np.int64)])
-        f = compute_ice_features(x, None, (1, 2, 3, 4, 6, 8), "vr", True)
+        f = compute_ice_features(x, None, (1, 2, 3, 4, 6, 8), "vr")
         y, sstar = int(seq[t]), int(f["ice_s_star"][t - 1])
         v = views(x, f, [t - 1])
         rec = item_record(v, y, sstar, labels, gid)
@@ -481,7 +479,7 @@ if "heldout" in a.parts:
         w = np.asarray(data[j * L: j * L + L + 1]).astype(np.int64)
         x, y = w[:-1], w[1:]
         seg = segments_from_eos(x, EOS)
-        f = compute_ice_features(x, seg, (1, 2, 3, 4, 6, 8), "vr", True)
+        f = compute_ice_features(x, seg, (1, 2, 3, 4, 6, 8), "vr")
         if not checked:
             fv = compute_ice_features(x, seg, (1, 2, 3, 4, 6, 8), "v")
             for k in V_KEYS:

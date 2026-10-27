@@ -30,16 +30,6 @@ per position, each a token c_k = x[i_k] with i_k <= t, its exact match length (0
                      set_alpha_mask); for each, the latest earlier occurrence q < a under the order-1 and the
                      order-2 key and the span x[q+1..q+4]: slots with q + i > t are empty (they would be the label)
 
-ICE-V2 slot features (v2=True, see model.ICEPointer): token-only functions of the candidate set at position t,
-computed from the slot tokens c_k, match lengths len_k and source positions i_k (ice_v_src, -1 = empty):
-
-    ice_v_delta  DELTA_OFF + clip(len_k - max{len_j : j valid OCCURRENCE slot, c_j != c_k}, -8, 8),
-                 DELTA_NONE if no such j (anchors' len is the anchor's own match length: they never enter the max)
-    ice_v_cnt    clip(#{j valid : c_j = c_k}, 1, CNT_MAX)
-    ice_v_rec    recency rank of m(c_k) = max{i_j : c_j = c_k} among the distinct slot tokens (newest = 0),
-                 clipped to REC_MAX
-    (empty slots: 0). The fourth V2 feature, the rank of the backbone log-prob, needs the backbone (model.py).
-
 Documents packed into one window are separated by `seg` (segment ids); matches never cross a
 segment boundary. Everything is vectorized NumPy (sort-based), cheap enough for DataLoader workers.
 """
@@ -65,15 +55,6 @@ N_ANCHORS = 2
 ANCHOR_WINDOW = 8                                     # anchors are searched in x[t-7..t]
 ANCHOR_ORDERS = (1, 2)
 SPAN = 4                                              # span tokens x[q+1..q+4] after an anchor occurrence
-# ICE-V2 slot features
-V2_KEYS = ("ice_v_delta", "ice_v_cnt", "ice_v_rec")   # [K, T] each (model inputs)
-SRC_KEY = "ice_v_src"                                 # [K, T] source positions i_k (-1 empty; not a model input)
-DELTA_CLIP = 8
-DELTA_OFF = DELTA_CLIP                                # bucket = DELTA_OFF + clip(delta): 0..16
-DELTA_NONE = 2 * DELTA_CLIP + 1                       # no competing occurrence slot
-N_DELTA = DELTA_NONE + 1
-CNT_MAX = 6
-REC_MAX = 3
 
 _P = np.uint64(0x9E3779B97F4A7C15)
 _ALPHA: Optional[np.ndarray] = None
@@ -86,17 +67,6 @@ def n_slots(cand: str, n_orders: int) -> int:
     if cand == "vr":
         return 2 * n_orders + len(CHAIN_OCC) + N_ANCHORS * len(ANCHOR_ORDERS) * SPAN
     raise ValueError(f"unknown candidate set {cand!r}")
-
-
-def n_occ_slots(cand: str, n_orders: int) -> int:
-    """Slots 0..n_occ-1 are occurrence slots (last / second per order, then the VR chain); the rest are anchors."""
-    return 2 * n_orders + (len(CHAIN_OCC) if cand == "vr" else 0)
-
-
-def slot_groups(cand: str, n_orders: int) -> list:
-    """V2 group of each slot: 0 last occurrence, 1 second occurrence, 2 chain, 3 anchor."""
-    return ([0, 1] * n_orders + ([2] * len(CHAIN_OCC) + [3] * (N_ANCHORS * len(ANCHOR_ORDERS) * SPAN)
-                                 if cand == "vr" else []))
 
 
 def set_alpha_mask(mask: Optional[np.ndarray]) -> None:
@@ -178,24 +148,7 @@ def _match_len(x: np.ndarray, seg: np.ndarray, a: np.ndarray, p: np.ndarray) -> 
     return out
 
 
-def v2_features(tok: np.ndarray, ln: np.ndarray, src: np.ndarray, n_occ: int) -> Dict[str, np.ndarray]:
-    """ICE-V2 slot features (module docstring) from the slots tok / ln / src [K, T] (tok -1 = empty); slots
-    0..n_occ-1 are the occurrence slots. One K x K compare per position."""
-    K = tok.shape[0]
-    valid = tok >= 0
-    same = (tok[:, None] == tok[None, :]) & valid[None, :]                       # [k, j, T]: c_j = c_k, j valid
-    occ = (np.arange(K) < n_occ)[:, None] & valid
-    comp = np.where(~same & occ[None, :], ln[None, :], -1).max(axis=1)           # best competing occurrence len
-    delta = np.where(comp < 0, DELTA_NONE, DELTA_OFF + np.clip(ln - comp, -DELTA_CLIP, DELTA_CLIP))
-    cnt = np.clip(same.sum(axis=1), 1, CNT_MAX)
-    newest = np.where(same, src[None, :], -1).max(axis=1)                        # m(c_k)
-    first = valid & ~(same & np.tri(K, k=-1, dtype=bool)[:, :, None]).any(axis=1)  # first slot of its token
-    rec = np.minimum((first[None, :] & (newest[None, :] > newest[:, None])).sum(axis=1), REC_MAX)
-    return dict(ice_v_delta=np.where(valid, delta, 0), ice_v_cnt=np.where(valid, cnt, 0),
-                ice_v_rec=np.where(valid, rec, 0))
-
-
-def _candidates(x, seg, cand, orders, prev_ok, len_raw, best, has_match, v2=False) -> Dict[str, np.ndarray]:
+def _candidates(x, seg, cand, orders, prev_ok, len_raw, best, has_match) -> Dict[str, np.ndarray]:
     """ICE-V / VR slots (see the module docstring). prev_ok [N,T]: verified most recent earlier occurrence of
     the order-n key ending at each position (-1 none); len_raw [N,T]: match length of that occurrence;
     best / has_match [T]: the longest-matching order (as for s*)."""
@@ -248,12 +201,8 @@ def _candidates(x, seg, cand, orders, prev_ok, len_raw, best, has_match, v2=Fals
     src = np.stack(srcs)
     assert (src <= t_idx).all(), "ICE candidate from the future"
     has = src >= 0
-    out = dict(ice_v_tok=np.where(has, x[np.maximum(src, 0)], -1),
-               ice_v_len=np.where(has, np.stack(lens), 0), ice_v_dist=np.where(has, np.stack(dists), 0))
-    if v2:
-        out[SRC_KEY] = np.where(has, src, -1)
-        out.update(v2_features(out["ice_v_tok"], out["ice_v_len"], out[SRC_KEY], n_occ_slots(cand, len(orders))))
-    return out
+    return dict(ice_v_tok=np.where(has, x[np.maximum(src, 0)], -1),
+                ice_v_len=np.where(has, np.stack(lens), 0), ice_v_dist=np.where(has, np.stack(dists), 0))
 
 
 def compute_ice_features(
@@ -261,11 +210,9 @@ def compute_ice_features(
     seg: Optional[np.ndarray] = None,
     orders: Sequence[int] = DEFAULT_ORDERS,
     cand: str = "",
-    v2: bool = False,
 ) -> Dict[str, np.ndarray]:
     """x: [T] token ids. seg: [T] segment (document) ids, non-decreasing; None = one document.
-    cand: "" (ICE / C arms), "v" or "vr": also return the ICE-V / VR candidate slots (V_KEYS, [K,T]).
-    v2 (with cand): also the ICE-V2 slot features (V2_KEYS) and the source positions (SRC_KEY), [K,T]."""
+    cand: "" (ICE / C arms), "v" or "vr": also return the ICE-V / VR candidate slots (V_KEYS, [K,T])."""
     x = np.asarray(x, dtype=np.int64)
     T = len(x)
     if seg is None:
@@ -354,7 +301,7 @@ def compute_ice_features(
         ice_match_len=match_len, ice_dist_star=dist_star,
     )
     if cand:
-        out.update(_candidates(x, seg, cand, tuple(orders), prev_ok, len_raw, best, match_len > 0, v2))
+        out.update(_candidates(x, seg, cand, tuple(orders), prev_ok, len_raw, best, match_len > 0))
     return out
 
 
