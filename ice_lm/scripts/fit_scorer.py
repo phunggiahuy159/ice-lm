@@ -57,10 +57,12 @@ ap.add_argument("--micro_batch", type=int, default=8)
 ap.add_argument("--lr", type=float, default=3e-2)
 ap.add_argument("--seed", type=int, default=7)
 ap.add_argument("--num_workers", type=int, default=6)
+ap.add_argument("--precision", default="auto", help="auto | fp32 | bf16 (fp32 on T4: no bf16, fp16 has no scaler here)")
+ap.add_argument("--accum", type=int, default=1, help="micro-batches per optimizer step (same batch on a smaller GPU)")
 a = ap.parse_args()
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-amp_dtype, _ = pick_precision("auto", device)
+amp_dtype, _ = pick_precision(a.precision, device)
 saved = json.load(open(os.path.join(a.base_run, "config.json")))
 base_cfg = model_config_from_dict(saved["model"])
 cfg = dataclasses.replace(base_cfg, ice=True, ice_v=a.cand, ice_v_input=False,
@@ -105,7 +107,7 @@ ds = SynMixWindows(a.data_dir, seq_len, cfg.ice_orders, True, 0.0, a.seed, 0, 1,
                    micro_batch=a.micro_batch, cand=a.cand, v2=a.v2, pool=pool, syn_frac=a.syn_frac)
 loader = DataLoader(ds, batch_size=a.micro_batch, collate_fn=collate, num_workers=a.num_workers,
                     pin_memory=device.type == "cuda", persistent_workers=a.num_workers > 0, prefetch_factor=4)
-steps = math.ceil(a.tokens / (a.micro_batch * seq_len))
+steps = math.ceil(a.tokens / (a.micro_batch * a.accum * seq_len))
 opt = torch.optim.Adam(params, lr=a.lr)
 model.train()
 it = iter(loader)
@@ -114,14 +116,15 @@ for step in range(1, steps + 1):
     lr = a.lr * min(1.0, step / 20) * 0.5 * (1 + math.cos(math.pi * step / steps))
     for g in opt.param_groups:
         g["lr"] = lr
-    x, y, ice, keep, _ = split_batch(next(it), device)
-    with torch.autocast("cuda", dtype=amp_dtype) if amp_dtype else torch.enable_grad():
-        _, loss = model(x, y, ice=ice, ice_keep=keep)
-    loss.backward()
+    for _ in range(a.accum):
+        x, y, ice, keep, _ = split_batch(next(it), device)
+        with torch.autocast("cuda", dtype=amp_dtype) if amp_dtype else torch.enable_grad():
+            _, loss = model(x, y, ice=ice, ice_keep=keep)
+        (loss / a.accum).backward()
     opt.step()
     opt.zero_grad(set_to_none=True)
     if step % 25 == 0 or step == 1:
-        tps = step * a.micro_batch * seq_len / (time.time() - t0)
+        tps = step * a.micro_batch * a.accum * seq_len / (time.time() - t0)
         print(f"[fit] step {step}/{steps} loss {loss.item():.4f} lr {lr:.2e} tok/s {tps:,.0f}", flush=True)
         log.append(dict(step=step, loss=loss.item(), lr=lr))
 
