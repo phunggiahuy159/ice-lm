@@ -1,0 +1,43 @@
+[    2s] window 0 {'swrong_yin': 312, 'amb_yin': 2594, 'swrong_yin_tie': 252}
+[    5s] window 1 {'swrong_yin': 798, 'amb_yin': 5272, 'swrong_yin_tie': 678}
+[    7s] window 2 {'swrong_yin': 1268, 'amb_yin': 7932, 'swrong_yin_tie': 1086}
+[   10s] window 3 {'swrong_yin': 1743, 'amb_yin': 10852, 'swrong_yin_tie': 1484}
+[   12s] window 4 {'swrong_yin': 2238, 'amb_yin': 13727, 'swrong_yin_tie': 1896}
+[   14s] window 5 {'swrong_yin': 2710, 'amb_yin': 15589, 'swrong_yin_tie': 2286}
+[   17s] window 6 {'swrong_yin': 3206, 'amb_yin': 17932, 'swrong_yin_tie': 2743}
+[   19s] window 7 {'swrong_yin': 3702, 'amb_yin': 20181, 'swrong_yin_tie': 3166}
+[   21s] window 8 {'swrong_yin': 4312, 'amb_yin': 22624, 'swrong_yin_tie': 3686}
+[   24s] window 9 {'swrong_yin': 4702, 'amb_yin': 25023, 'swrong_yin_tie': 4032}
+[   26s] window 10 {'swrong_yin': 5149, 'amb_yin': 27848, 'swrong_yin_tie': 4395}
+[   29s] window 11 {'swrong_yin': 5720, 'amb_yin': 30497, 'swrong_yin_tie': 4887}
+[   31s] window 12 {'swrong_yin': 6295, 'amb_yin': 33028, 'swrong_yin_tie': 5356}
+[   33s] window 13 {'swrong_yin': 6606, 'amb_yin': 35018, 'swrong_yin_tie': 5590}
+[   36s] window 14 {'swrong_yin': 7045, 'amb_yin': 37804, 'swrong_yin_tie': 5955}
+[   38s] window 15 {'swrong_yin': 7754, 'amb_yin': 39985, 'swrong_yin_tie': 6580}
+[   40s] window 16 {'swrong_yin': 8244, 'amb_yin': 42435, 'swrong_yin_tie': 7005}
+[   43s] window 17 {'swrong_yin': 8756, 'amb_yin': 44677, 'swrong_yin_tie': 7455}
+[   45s] window 18 {'swrong_yin': 9223, 'amb_yin': 47416, 'swrong_yin_tie': 7881}
+[   47s] window 19 {'swrong_yin': 9692, 'amb_yin': 49817, 'swrong_yin_tie': 8305}
+[   50s] window 20 {'swrong_yin': 10260, 'amb_yin': 52015, 'swrong_yin_tie': 8812}
+[   52s] window 21 {'swrong_yin': 10811, 'amb_yin': 54057, 'swrong_yin_tie': 9294}
+[   55s] window 22 {'swrong_yin': 11395, 'amb_yin': 56543, 'swrong_yin_tie': 9795}
+[   57s] window 23 {'swrong_yin': 12026, 'amb_yin': 59048, 'swrong_yin_tie': 10342}
+[   59s] window 24 {'swrong_yin': 12512, 'amb_yin': 60937, 'swrong_yin_tie': 10775}
+[   62s] window 25 {'swrong_yin': 12931, 'amb_yin': 62964, 'swrong_yin_tie': 11125}
+[   64s] window 26 {'swrong_yin': 13255, 'amb_yin': 65523, 'swrong_yin_tie': 11397}
+[   66s] window 27 {'swrong_yin': 13757, 'amb_yin': 67115, 'swrong_yin_tie': 11858}
+[   69s] window 28 {'swrong_yin': 14203, 'amb_yin': 69198, 'swrong_yin_tie': 12248}
+[   71s] window 29 {'swrong_yin': 14735, 'amb_yin': 71593, 'swrong_yin_tie': 12707}
+[   73s] window 30 {'swrong_yin': 15312, 'amb_yin': 73716, 'swrong_yin_tie': 13222}
+[   76s] window 31 {'swrong_yin': 15850, 'amb_yin': 76246, 'swrong_yin_tie': 13696}
+[   78s] window 32 {'swrong_yin': 16319, 'amb_yin': 78269, 'swrong_yin_tie': 14127}
+[   80s] window 33 {'swrong_yin': 16941, 'amb_yin': 80679, 'swrong_yin_tie': 14666}
+[   83s] window 34 {'swrong_yin': 17423, 'amb_yin': 82994, 'swrong_yin_tie': 15078}
+[   85s] window 35 {'swrong_yin': 17810, 'amb_yin': 85000, 'swrong_yin_tie': 15408}
+[   87s] window 36 {'swrong_yin': 18291, 'amb_yin': 87705, 'swrong_yin_tie': 15819}
+[   90s] window 37 {'swrong_yin': 18784, 'amb_yin': 90529, 'swrong_yin_tie': 16239}
+[   92s] window 38 {'swrong_yin': 19305, 'amb_yin': 93262, 'swrong_yin_tie': 16671}
+[   95s] window 39 {'swrong_yin': 19719, 'amb_yin': 95751, 'swrong_yin_tie': 17005}
+swrong_yin ptr_sum=0.406 ptr=0.401 ell=0.645 cosF=0.447 cosM=0.357 cosF_src=0.155 rp16=0.398 lex=0.126 ptr+2cosF=0.416 ptr+5cosF=0.432 ptr+10cosF=0.443 ptr+5cosM=0.375 ell+5cosF=0.624 rand=0.137 n=19719
+amb_yin ptr_sum=0.857 ptr=0.861 ell=0.822 cosF=0.835 cosM=0.820 cosF_src=0.137 rp16=0.762 lex=0.190 ptr+2cosF=0.866 ptr+5cosF=0.868 ptr+10cosF=0.867 ptr+5cosM=0.856 ell+5cosF=0.844 rand=0.154 n=95751
+swrong_yin_tie ptr_sum=0.391 ptr=0.389 ell=0.637 cosF=0.431 cosM=0.355 cosF_src=0.158 rp16=0.392 lex=0.126 ptr+2cosF=0.403 ptr+5cosF=0.418 ptr+10cosF=0.428 ptr+5cosM=0.373 ell+5cosF=0.614 rand=0.140 n=17005
